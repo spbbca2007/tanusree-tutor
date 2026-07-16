@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sparky — Tanusree's Study Tutor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <div class="brand-icon">✨</div>
+          <span class="brand-name">Sparky</span>
+        </div>
+        <div class="brand-sub">Tanusree's study tutor</div>
+      </div>
+      <div class="sidebar-student">
+        <div class="student-name">Tanusree</div>
+        <div class="student-grade">Grade 6 → 7 · Math bridge</div>
+      </div>
+      <div class="sidebar-stats">
+        <div class="sidebar-stat"><span class="sidebar-stat-num" id="sidebar-stars">0</span><span class="sidebar-stat-label">Stars</span></div>
+        <div class="sidebar-stat"><span class="sidebar-stat-num" id="sidebar-streak">0</span><span class="sidebar-stat-label">Streak</span></div>
+        <div class="sidebar-stat"><span class="sidebar-stat-num" id="sidebar-mastery">0%</span><span class="sidebar-stat-label">Mastery</span></div>
+        <div class="sidebar-stat"><span class="sidebar-stat-num" id="sidebar-correct">0</span><span class="sidebar-stat-label">Correct</span></div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-view="dashboard"><span class="nav-icon">🏠</span> Dashboard</button>
+        <button class="nav-btn" data-view="topics"><span class="nav-icon">📚</span> All Topics</button>
+        <button class="nav-btn" data-view="topic" style="display:none" id="nav-topic-detail"><span class="nav-icon">📖</span> <span id="nav-topic-label">Topic</span></button>
+        <button class="nav-btn" data-view="lesson" style="display:none" id="nav-lesson"><span class="nav-icon">✏️</span> Practice</button>
+        <button class="nav-btn" data-view="parent"><span class="nav-icon">👪</span> Parent View</button>
+      </nav>
+      <div class="sidebar-footer">Grade 7 starts July · Practise daily ⚡</div>
+    </aside>
+    <main class="main">
+      <section id="view-dashboard" class="view visible"></section>
+      <section id="view-topics" class="view"></section>
+      <section id="view-topic" class="view"></section>
+      <section id="view-lesson" class="view"></section>
+      <section id="view-parent" class="view"></section>
+    </main>
+  </div>
+  <script>
+    window.refreshSidebarStats = function(state, overallMastery) {
+      document.getElementById('sidebar-stars').textContent = state.stars || 0;
+      document.getElementById('sidebar-streak').textContent = state.streak || 0;
+      document.getElementById('sidebar-mastery').textContent = (overallMastery || 0) + '%';
+      document.getElementById('sidebar-correct').textContent = (state.attempts || []).filter(a => a.correct).length;
+    };
+  </script>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
