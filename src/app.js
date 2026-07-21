@@ -58,6 +58,9 @@ function bindNav() {
 function renderAll() { renderDashboard(); renderTopics(); }
 
 function getTopic(id) { return curriculum.topics.find(t => t.id === (id || selectedTopicId)); }
+function topicsForCurrentGrade() { return curriculum.topics.filter(t => t.grade === (state.currentGrade || 6)); }
+function setGrade(g) { state.currentGrade = g; scheduleSave(state); renderAll(); showView(document.querySelector(".nav-btn.active")?.dataset.view || "dashboard"); }
+window.setGrade = setGrade;
 function getLesson() { const t = getTopic(); return t.lessons.find(l => l.id === selectedLessonId) || t.lessons[0]; }
 
 // Execute scripts injected via innerHTML
@@ -114,18 +117,29 @@ function handleGoStage(stage) {
 
 // ── Dashboard ──────────────────────────────────────────────────
 function renderDashboard() {
-  const overall = getOverallMastery(state);
-  const rec = getRecommendation(state);
+  const grade = state.currentGrade || 6;
+  const overall = getOverallMastery(state, grade);
+  const rec = getRecommendation(state, grade);
   const greeting = tutor.greet(state);
-  const ov = getProgressOverview(state);
+  const ov = getProgressOverview(state, grade);
   const s = ov.summary;
   views.dashboard.innerHTML = `
+    <style>
+      .grade-toggle{display:flex;gap:8px;margin:14px 0}
+      .grade-btn{padding:8px 16px;border-radius:999px;border:1.5px solid #ddd;background:#f9f9f9;color:#666;font-size:13px;font-weight:600;cursor:pointer}
+      .grade-btn.on{background:#4a90d9;color:#fff;border-color:#4a90d9}
+      .g7-notice{background:#fff8e6;border:1px solid #f4d58d;border-radius:10px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:14px}
+    </style>
     <div class="page-wrap">
       <div class="page-header">
         <div class="sparky-greeting">
           <div class="greeting-title">${greeting.title}</div>
           <div class="greeting-body">${greeting.body}</div>
         </div>
+      </div>
+      <div class="grade-toggle">
+        <button class="grade-btn ${grade===6?'on':''}" onclick="setGrade(6)">Grade 6 · Review</button>
+        <button class="grade-btn ${grade===7?'on':''}" onclick="setGrade(7)">Grade 7 · Current</button>
       </div>
       <div class="stats-row">
         <div class="stat-card"><span class="stat-num">${state.stars||0}</span><span class="stat-label">Stars</span></div>
@@ -135,6 +149,7 @@ function renderDashboard() {
         <div class="stat-card"><span class="stat-num" style="color:var(--orange)">${s.inProgress}</span><span class="stat-label">In progress</span></div>
         <div class="stat-card"><span class="stat-num" style="color:var(--ink3)">${s.notStarted}</span><span class="stat-label">Not started</span></div>
       </div>
+      ${grade===7 && topicsForCurrentGrade().length < 5 ? `<div class="g7-notice">📚 Grade 7 content is being added topic by topic — ${topicsForCurrentGrade().length} of 14 topics ready so far. More coming soon!</div>` : ""}
       ${rec ? `
       <div class="rec-card" data-action="open-topic" data-topic-id="${rec.topic.id}">
         <span class="rec-emoji">${rec.topic.emoji}</span>
@@ -142,7 +157,7 @@ function renderDashboard() {
         <span class="rec-arrow">→</span>
       </div>` : ""}
       <div class="topics-grid">
-        ${curriculum.topics.map(t => {
+        ${topicsForCurrentGrade().map(t => {
           const m = getTopicMastery(state,t.id);
           const st = getTopicStatus(state,t.id);
           return `<div class="topic-card ${t.color}" data-action="open-topic" data-topic-id="${t.id}" style="cursor:pointer">
@@ -160,10 +175,15 @@ function renderDashboard() {
 
 // ── Topics ─────────────────────────────────────────────────────
 function renderTopics() {
-  const ov = getProgressOverview(state); const s = ov.summary;
+  const grade = state.currentGrade || 6;
+  const ov = getProgressOverview(state, grade); const s = ov.summary;
   views.topics.innerHTML = `
     <div class="page-wrap">
-      <div class="page-header"><h2>All Topics</h2><p class="subtitle">11 topics — 7 core + 4 from your school papers</p></div>
+      <div class="page-header"><h2>All Topics</h2><p class="subtitle">${grade===6?"11 topics — 7 core + 4 from your school papers":`Grade 7 · ${s.total} of 14 topics ready`}</p></div>
+      <div class="grade-toggle">
+        <button class="grade-btn ${grade===6?'on':''}" onclick="setGrade(6)">Grade 6 · Review</button>
+        <button class="grade-btn ${grade===7?'on':''}" onclick="setGrade(7)">Grade 7 · Current</button>
+      </div>
       <div class="progress-overview-bar">
         <div class="pob-item pob-done"><span class="pob-num">${s.completed}</span><span class="pob-lbl">Completed</span></div>
         <div class="pob-divider"></div>
@@ -522,7 +542,7 @@ function renderParent() {
       <div class="section-card">
         <div class="section-head"><span class="eyebrow">Overview</span><h3>Mastery by topic</h3></div>
         <div class="mastery-list">
-          ${curriculum.topics.map(t => { const m=getTopicMastery(state,t.id); return `<div class="mastery-row"><span class="mr-emoji">${t.emoji}</span><span class="mr-name">${t.title}${t.fromSchool?' 📋':''}</span><div class="mr-bar"><div class="mr-fill" style="width:${m}%"></div></div><span class="mr-pct">${m}%</span></div>`; }).join("")}
+          ${topicsForCurrentGrade().map(t => { const m=getTopicMastery(state,t.id); return `<div class="mastery-row"><span class="mr-emoji">${t.emoji}</span><span class="mr-name">${t.title}${t.fromSchool?' 📋':''}</span><div class="mr-bar"><div class="mr-fill" style="width:${m}%"></div></div><span class="mr-pct">${m}%</span></div>`; }).join("")}
         </div>
       </div>
       ${misconceptions.length?`

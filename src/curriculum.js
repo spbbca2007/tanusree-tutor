@@ -4,7 +4,7 @@ export const curriculum = {
   student: { name: "Tanusree", grade: 6, nextGrade: 7, schoolStartMonth: "July" },
   topics: [
     {
-      id: "algebra",
+      id: "algebra", grade: 6,
       realWorld: {"title": "The Mystery Jar", "emoji": "🫙", "task": "Fill a jar with some marbles or coins (don't count yet). Add exactly 5 more. Now count the total. Can you work backwards to find how many were in the jar to start? Write it as x + 5 = (your total).", "materials": "A jar, marbles/coins/buttons", "bringBack": "How many were in the jar at the start? Check by counting!"}, title: "Algebra Basics", emoji: "⚖️",
       tagline: "Find the mystery number", color: "topic-orange", difficulty: "core",
       lessons: [{
@@ -36,7 +36,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "fractions",
+      id: "fractions", grade: 6,
       realWorld: {"title": "Pizza or Roti Fractions", "emoji": "🍕", "task": "Next time there's a pizza, roti, or dosa at home, cut it into equal pieces. Eat some. What fraction did you eat? What fraction is left? Take a photo before and after!", "materials": "Any round food cut into equal parts", "bringBack": "What fraction did you eat? Was it more or less than half?"}, title: "Fractions, Decimals & Percent", emoji: "🍕",
       tagline: "Slices of the whole", color: "topic-pink", difficulty: "core",
       lessons: [{
@@ -64,7 +64,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "ratio",
+      id: "ratio", grade: 6,
       realWorld: {"title": "The Recipe Doubler", "emoji": "🍳", "task": "Find a recipe at home (or ask whoever cooks). It might say '2 cups rice : 4 cups water'. If you wanted to make DOUBLE, how much of each would you need? Try halving it too.", "materials": "Any recipe with two ingredients", "bringBack": "Write the original ratio and your doubled ratio."}, title: "Ratio & Proportion", emoji: "⚖️",
       tagline: "Comparing quantities", color: "topic-teal", difficulty: "core",
       lessons: [{
@@ -88,7 +88,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "patterns",
+      id: "patterns", grade: 6,
       realWorld: {"title": "Patterns Around the House", "emoji": "🔍", "task": "Hunt for number patterns: floor tiles, window grills, a staircase (each step adds the same height). Count them as a sequence. What's the rule? What would the 10th one be?", "materials": "Your eyes and a notebook", "bringBack": "Describe one pattern you found and its rule."}, title: "Patterns & Sequences", emoji: "🔢",
       tagline: "Find the rule, predict the future", color: "topic-purple", difficulty: "core",
       lessons: [{
@@ -112,7 +112,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "graphs",
+      id: "graphs", grade: 6,
       realWorld: {"title": "Family Data Survey", "emoji": "📋", "task": "Ask 5 family members or friends their favourite fruit (or colour, or cricket team). Tally the answers. Draw a bar chart. Which was most popular? That's the MODE!", "materials": "Paper, pencil, 5 people to ask", "bringBack": "Which option won? Draw your bar chart."}, title: "Graphs & Data", emoji: "📊",
       tagline: "Read, draw, and understand data", color: "topic-blue", difficulty: "core",
       lessons: [{
@@ -137,7 +137,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "measurement",
+      id: "measurement", grade: 6,
       realWorld: {"title": "Kitchen Scale Detective", "emoji": "⚖️", "task": "Find a bag of rice, dal, or sugar in the kitchen. Read the weight on the label (e.g. 1 kg). Now convert it to grams. Weigh out 250g into a bowl — what fraction of the full bag is that?", "materials": "A kitchen scale, a bag of rice/dal/sugar", "bringBack": "How many grams in the full bag? How many 250g bowls can you make?"}, title: "Measurement & Conversions", emoji: "📏",
       tagline: "Smaller unit, bigger number", color: "topic-green", difficulty: "core",
       lessons: [{
@@ -161,7 +161,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "probability",
+      id: "probability", grade: 6,
       realWorld: {"title": "The Coin & Dice Lab", "emoji": "🎲", "task": "Flip a coin 20 times. Tally heads vs tails. Was it close to 50-50? Roll a dice 30 times. How often did you get a 6? Compare what actually happened to what SHOULD happen (1 in 6).", "materials": "A coin and a dice", "bringBack": "Your tallies. Did reality match the theory?"}, title: "Probability", emoji: "🎲",
       tagline: "How likely is it?", color: "topic-coral", difficulty: "core",
       lessons: [{
@@ -185,7 +185,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "rounding",
+      id: "rounding", grade: 6,
       realWorld: {"title": "Shopping Bill Rounder", "emoji": "🛒", "task": "Look at a shopping bill or price tags. Pick 5 prices with paise/decimals (like ₹47.80). Round each to the nearest rupee (whole number) AND to the nearest ten rupees. Notice how 'tenth' and 'ten' give totally different answers!", "materials": "A shopping bill or price tags", "bringBack": "Your 5 prices, rounded two different ways."}, title: "Rounding Decimals", emoji: "🎯",
       tagline: "Tenth is NOT ten — let's fix that forever",
       color: "topic-orange", difficulty: "foundations", fromSchool: true,
@@ -214,7 +214,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "integers",
+      id: "integers", grade: 6,
       realWorld: {"title": "Temperature & Floors", "emoji": "🌡️", "task": "Check the fridge and freezer temperature (freezers are often -18°C). Look at a tall building's lift buttons — basement floors are negative! Count how many floors from B2 (-2) up to floor 5. That's an integer jump!", "materials": "A fridge, or a building with a basement", "bringBack": "What's the freezer temp? How many floors from the lowest basement to the top?"}, title: "Integers & Negative Numbers", emoji: "🌡️",
       tagline: "Numbers below zero", color: "topic-blue", difficulty: "foundations", fromSchool: true,
       schoolNote: "Tanusree scored 20/20 on comparing integers. Extending to operations.",
@@ -240,7 +240,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "functions",
+      id: "functions", grade: 6,
       realWorld: {"title": "The Human Function Machine", "emoji": "⚙️", "task": "Play a game with a family member. You are the 'machine': secretly pick a rule (like 'double it and add 1'). They call out numbers, you give outputs. Can they guess your rule? Then swap!", "materials": "One other person", "bringBack": "What rule did you use? How many guesses did they need?"}, title: "Function Machines", emoji: "⚙️",
       tagline: "Input → Rule → Output", color: "topic-teal", difficulty: "foundations", fromSchool: true,
       schoolNote: "Term 3 Assessment Q1: cube→+2. She correctly got 66 and 29.",
@@ -265,7 +265,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "surface-area",
+      id: "surface-area", grade: 6,
       realWorld: {"title": "Wrap the Box", "emoji": "🎁", "task": "Find a small box at home (tissue box, soap box). Measure its length, width, and height with a ruler. Calculate the surface area. Then wrap it in paper — did your calculation match how much paper you needed?", "materials": "A small box, ruler, paper", "bringBack": "The box dimensions and your surface area calculation."}, title: "Surface Area", emoji: "📦",
       tagline: "How much wrapping paper to cover a box?",
       color: "topic-purple", difficulty: "bridge", fromSchool: true,
@@ -289,6 +289,38 @@ export const curriculum = {
         ],
         challenge: { prompt:"Tanusree paints a box 7cm×5cm×3cm. 1 tin covers 100cm². How many tins needed?", options:["1","2","3","4"], answer:"2", explanation:"SA=2(35+21+15)=142cm². 142÷100=1.42 → round up → 2 tins.", coach:"Always round UP for paint — you can't buy half a tin." }
       }]
+    },
+    {
+      id: "g7-integer-ops", grade: 7,
+      realWorld: {"title": "Temperature Tracker", "emoji": "🌡️", "task": "Check the temperature at home each morning and evening for 3 days (weather app or thermometer). Write each as a signed number if below a reference (e.g. compare to 25°C: 22°C = -3, 30°C = +5). Add up the day's total change. On which day did it swing the most?", "materials": "A weather app or thermometer, notebook", "bringBack": "Your 3 days of signed temperature differences and totals."}, title: "Integer Operations", emoji: "🔢",
+      tagline: "Add, subtract, multiply, divide — the four rules", color: "topic-blue", difficulty: "core",
+      lessons: [{
+        id: "g7int-1", title: "The four rules with integers",
+        firstPrinciple: "Every integer operation follows a sign rule. For addition and subtraction, think of moving along a number line. For multiplication and division, same signs give a positive result, different signs give a negative result — no exceptions.",
+        blocks: [
+          { type: "text", title: "Addition and subtraction", body: "Adding a positive moves RIGHT on the number line.\nAdding a negative moves LEFT.\nSubtracting a negative is the same as adding a positive: 5 − (−3) = 5 + 3 = 8\n\nThink of it as removing a debt — removing -3 leaves you 3 better off." },
+          { type: "example", title: "Multiplication and division sign rule", body: "Same signs → positive:\n(-6) × (-4) = 24\n(-20) ÷ (-5) = 4\n\nDifferent signs → negative:\n(-6) × 4 = -24\n20 ÷ (-5) = -4\n\nCount the negative signs: an even number of negatives gives a positive result, an odd number gives negative." },
+          { type: "tip", body: "When two negative signs sit next to each other (like 5 − (−3)), they combine into a plus. 'Minus a minus' always becomes 'plus'." }
+        ],
+        practice: [
+          { id:"g7int-e01", tier:"easy",   prompt:"Evaluate: -8 + 15",                  options:["-23","7","-7","23"],        answer:"7",   hint:"Start at -8, move 15 right.",         explanation:"-8+15=7",                             skill:"add-integers",        misconception:"adds-absolute-values" },
+          { id:"g7int-e02", tier:"easy",   prompt:"Evaluate: 6 - 10",                   options:["-4","4","16","-16"],        answer:"-4",  hint:"6 is smaller — result is negative.", explanation:"6-10=-4",                             skill:"subtract-integers",   misconception:"ignores-sign-when-smaller" },
+          { id:"g7int-e03", tier:"easy",   prompt:"Evaluate: -5 - (-9)",                options:["-14","14","4","-4"],        answer:"4",   hint:"Minus a minus becomes plus: -5+9.",  explanation:"-5-(-9)=-5+9=4",                       skill:"subtract-integers",   misconception:"treats-double-negative-as-negative" },
+          { id:"g7int-e04", tier:"easy",   prompt:"Evaluate: -7 × 6",                   options:["42","-42","13","-13"],      answer:"-42", hint:"Different signs → negative.",        explanation:"-7×6=-42",                            skill:"multiply-integers",   misconception:"ignores-sign-rule" },
+          { id:"g7int-e05", tier:"easy",   prompt:"Evaluate: -9 × -3",                  options:["-27","27","-12","12"],      answer:"27",  hint:"Same signs → positive.",             explanation:"-9×-3=27",                            skill:"multiply-integers",   misconception:"same-signs-give-negative" },
+          { id:"g7int-e06", tier:"easy",   prompt:"Evaluate: -36 ÷ 4",                  options:["-9","9","-32","32"],        answer:"-9",  hint:"Different signs → negative.",        explanation:"-36÷4=-9",                            skill:"divide-integers",     misconception:"ignores-sign-rule" },
+          { id:"g7int-e07", tier:"easy",   prompt:"Evaluate: -63 ÷ -7",                 options:["-9","9","-70","70"],        answer:"9",   hint:"Same signs → positive.",             explanation:"-63÷-7=9",                            skill:"divide-integers",     misconception:"same-signs-give-negative" },
+          { id:"g7int-e08", tier:"easy",   prompt:"Evaluate: 4 - (-6)",                 options:["-2","2","10","-10"],        answer:"10",  hint:"4 + 6.",                              explanation:"4-(-6)=4+6=10",                       skill:"subtract-integers",   misconception:"treats-double-negative-as-negative" },
+          { id:"g7int-m01", tier:"medium", prompt:"Evaluate: -12 + (-8) - (-5)",        options:["-15","-25","-5","15"],      answer:"-15", hint:"Work left to right: -12-8=-20, then -20+5.", explanation:"-12+(-8)=-20. -20-(-5)=-20+5=-15", skill:"mixed-operations", misconception:"treats-double-negative-as-negative" },
+          { id:"g7int-m02", tier:"medium", prompt:"Evaluate: -5 × -4 + 3",              options:["-17","17","23","-23"],      answer:"23",  hint:"Multiply first: -5×-4=20. Then add 3.", explanation:"20+3=23",                          skill:"order-of-operations",  misconception:"adds-before-multiplying" },
+          { id:"g7int-m03", tier:"medium", prompt:"Evaluate: (-2)³",                    options:["-8","8","-6","6"],          answer:"-8",  hint:"(-2)×(-2)×(-2). Odd number of negatives.", explanation:"-2×-2=4, 4×-2=-8",                skill:"integer-powers",       misconception:"ignores-odd-negative-count" },
+          { id:"g7int-m04", tier:"medium", prompt:"Temperature drops from -3°C by 8°C more. New temperature?", options:["-11°C","5°C","-5°C","11°C"], answer:"-11°C", hint:"-3 - 8 = ?", explanation:"-3-8=-11°C", skill:"add-integers", misconception:"subtracts-absolute-values" },
+          { id:"g7int-h01", tier:"hard",   prompt:"Evaluate: -18 ÷ (-3) × -2",          options:["-12","12","-3","3"],        answer:"-12", hint:"Work left to right: -18÷-3=6, then 6×-2.", explanation:"6×-2=-12",                        skill:"mixed-operations",     misconception:"wrong-order-of-operations" },
+          { id:"g7int-h02", tier:"hard",   prompt:"A submarine is at -240m. It rises 85m, then dives 40m more. New depth?", options:["-195m","-155m","-115m","195m"], answer:"-195m", hint:"-240+85=-155. -155-40=?", explanation:"-240+85=-155. -155-40=-195m", skill:"mixed-operations", misconception:"subtracts-instead-of-adds" },
+          { id:"g7int-h03", tier:"hard",   prompt:"Which is greatest: -4×-5, -3×8, (-2)³, or -30÷-6?", options:["-4×-5","−3×8","(-2)³","-30÷-6"], answer:"-4×-5", hint:"Calculate each: 20, -24, -8, 5.", explanation:"-4×-5=20 is the largest value", skill:"multiply-integers", misconception:"same-signs-give-negative" }
+        ],
+        challenge: { prompt:"A lift starts at floor -2 (basement). It goes up 7 floors, then down 3 floors, then up 1 more. What floor is it on?", options:["3","5","2","4"], answer:"3", explanation:"-2+7=5. 5-3=2. 2+1=3. Final floor: 3", coach:"Track the position step by step, treating each move as adding or subtracting." }
+      }]
     }
   ]
 };
@@ -296,5 +328,12 @@ export const curriculum = {
 export const bankKeyForTopic = {
   algebra:"algebra", fractions:"fractions", ratio:"ratio", patterns:"patterns",
   graphs:"graphs", measurement:"measurement", probability:"probability",
-  rounding:"rounding", integers:"integers", functions:"functions", "surface-area":"surfaceArea"
+  rounding:"rounding", integers:"integers", functions:"functions", "surface-area":"surfaceArea",
+  "g7-integer-ops":"g7-integer-ops"
 };
+
+// Returns only the topics belonging to a given grade (6 or 7).
+// Used by the dashboard/topics/parent views to show one grade at a time.
+export function topicsForGrade(grade) {
+  return curriculum.topics.filter(t => t.grade === grade);
+}
