@@ -291,7 +291,7 @@ export const curriculum = {
       }]
     },
     {
-      id: "g7-integer-ops", grade: 7,
+      id: "g7-integer-ops", grade: 7, term: 1,
       realWorld: {"title": "Temperature Tracker", "emoji": "🌡️", "task": "Check the temperature at home each morning and evening for 3 days (weather app or thermometer). Write each as a signed number if below a reference (e.g. compare to 25°C: 22°C = -3, 30°C = +5). Add up the day's total change. On which day did it swing the most?", "materials": "A weather app or thermometer, notebook", "bringBack": "Your 3 days of signed temperature differences and totals."}, title: "Integer Operations", emoji: "🔢",
       tagline: "Add, subtract, multiply, divide — the four rules", color: "topic-blue", difficulty: "core",
       lessons: [{
@@ -336,4 +336,18 @@ export const bankKeyForTopic = {
 // Used by the dashboard/topics/parent views to show one grade at a time.
 export function topicsForGrade(grade) {
   return curriculum.topics.filter(t => t.grade === grade);
+}
+
+// Groups a grade's topics by term: { 1: [...], 2: [...], 3: [...] }.
+// Topics without a term field (e.g. Grade 6, which has no term concept)
+// are omitted from the result — callers should fall back to a flat list.
+export function topicsByTerm(grade) {
+  const topics = topicsForGrade(grade);
+  const groups = {};
+  topics.forEach(t => {
+    if (!t.term) return;
+    if (!groups[t.term]) groups[t.term] = [];
+    groups[t.term].push(t);
+  });
+  return groups;
 }

@@ -198,8 +198,12 @@ function renderTopics() {
           <div class="pob-seg pob-seg-pend" style="width:${(s.notStarted/s.total)*100}%"></div>
         </div></div>
       </div>
-      <div class="topics-grid">
-        ${ov.details.map(({topic,status,mastery,totalAttempts,correctAttempts}) => `
+      ${grade===7 ? renderTopicsByTerm(ov.details) : `<div class="topics-grid">${ov.details.map(renderTopicCard).join("")}</div>`}
+    </div>`;
+}
+
+function renderTopicCard({topic,status,mastery,totalAttempts,correctAttempts}) {
+  return `
           <div class="topic-card ${topic.color}">
             <div class="topic-card-top">
               <span class="topic-big-emoji">${topic.emoji}</span>
@@ -220,9 +224,25 @@ function renderTopics() {
               <button class="btn-topic-start" data-action="open-topic" data-topic-id="${topic.id}">${status==='not-started'?'Start →':status==='completed'?'Review →':'Continue →'}</button>
               ${status!=='not-started'?`<button class="btn-redo" data-action="redo-topic" data-topic-id="${topic.id}">↺ Redo</button>`:''}
             </div>
-          </div>`).join("")}
-      </div>
-    </div>`;
+          </div>`;
+}
+
+// Groups the already-computed detail rows by topic.term and renders three
+// labelled sections (Term 1/2/3) instead of one flat grid. Topics without a
+// term (shouldn't happen for Grade 7, but kept safe) are dropped into an
+// "Unassigned" section rather than silently disappearing.
+function renderTopicsByTerm(details) {
+  const terms = { 1: [], 2: [], 3: [] };
+  const unassigned = [];
+  details.forEach(d => { if (d.topic.term && terms[d.topic.term]) terms[d.topic.term].push(d); else unassigned.push(d); });
+  const termLabels = { 1: "Term 1", 2: "Term 2", 3: "Term 3" };
+  let html = "";
+  [1,2,3].forEach(termNum => {
+    if (!terms[termNum].length) return;
+    html += `<div class="term-section"><h3 class="term-heading">${termLabels[termNum]}</h3><div class="topics-grid">${terms[termNum].map(renderTopicCard).join("")}</div></div>`;
+  });
+  if (unassigned.length) html += `<div class="term-section"><h3 class="term-heading">More</h3><div class="topics-grid">${unassigned.map(renderTopicCard).join("")}</div></div>`;
+  return `<style>.term-heading{font-size:16px;font-weight:700;color:#444;margin:22px 0 10px}.term-section:first-of-type .term-heading{margin-top:8px}</style>${html}`;
 }
 
 // ── Topic detail ───────────────────────────────────────────────
