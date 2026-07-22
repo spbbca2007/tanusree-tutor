@@ -1,42 +1,40 @@
-# Sparky — Tanusree's Study Tutor
+# Grade 7 — Term 1, Batch 1 (3 new topics)
 
-Local-first personalised math learning app for Tanusree (Grade 6 → 7).
+## What changed
+Only 2 files this time: `curriculum.js`, `visuals.js`. (`app.js` and `state.js` are
+unchanged from the last delivery — no need to re-copy those.)
 
-## Quick start
+## What's new — Term 1 now has 4 of 9 topics
+1. Integer Operations (delivered earlier)
+2. **Factors, Multiples, Primes & Indices** — 15 questions, factor-tree visual,
+   live "type a number, see its factors/prime factorization" tool
+3. **Rational & Irrational Numbers** — 14 questions, number-line visual,
+   live "check any square root" tool
+4. **Percentage Deep Dive** — 14 questions (including reverse percentage and
+   successive % change), animated bar visual, live increase/decrease calculator
 
-**Easiest:** Right-click `start_tutor.ps1` → "Run with PowerShell"
+Each has the full treatment: first-principles explanation, real-world mission,
+tiered practice (easy/medium/hard), a challenge question, and 2 custom visuals.
 
-**Manual (two PowerShell windows):**
+## Validation done before packaging
+- Syntax-checked every file
+- Every question's answer confirmed present in its own options list (43 questions
+  checked across the 3 new topics)
+- No duplicate question IDs — within each topic AND across all 4 Grade 7 topics
+- All 6 new visual function names confirmed unique (no collisions)
+- Full end-to-end simulation: practice queues, question bank, mastery calc, term
+  grouping, recommendations — all verified working for all 4 Grade 7 topics
+- Confirmed Grade 6 (11 topics) completely untouched
 
-Window 1 (database):
-```
-python save_server.py
-```
+## How to deploy
+Copy `curriculum.js` and `visuals.js` into `D:\Tanu\tanusree-tutor\src\`, overwriting
+the existing ones. Commit and push via GitHub Desktop, Netlify auto-deploys.
 
-Window 2 (app):
-```
-python -m http.server 4173
-```
+## What's left in Term 1 (Batch 2)
+- Fractions & Recurring Decimals
+- Mixed Numbers & Combined Fraction/Decimal/Percent
+- Algebra: Grouping & Expanding
+- Congruency
+- Data Collection & Representation
 
-Then open Chrome at **http://localhost:4173**
-
-## First time setup
-1. Start the app (above)
-2. Go to **Parent View → Restore from backup**
-3. Pick Tanusree's latest `tanusree-backup-*.json`
-
-## Daily backup
-Just copy the file `tanusree_progress.db` — that's the complete backup.
-
-## What's inside
-- **11 topics**: Algebra, Fractions, Ratio, Patterns, Graphs, Measurement, Probability + 4 from her actual school papers (Rounding Decimals, Integers, Function Machines, Surface Area)
-- **94 questions** with animated visuals and interactive explorers
-- **Step-by-step solver** on every question
-- **SQLite database** with auto-save and localStorage fallback
-- **Parent View** with mastery tracking and backup tools
-
-## Topics from her school papers
-- **Rounding Decimals** — she confused "tenth" with "ten" (wrote 10 for 6.84). Fixed with a clear place-value visual.
-- **Integers** — she scored 20/20 comparing; extended to operations.
-- **Function Machines** — from her Term 3 test (cube→+2); consolidated.
-- **Surface Area** — left blank in homework; full first-principles intro.
+Say "continue with Term 1" and I'll pick up Batch 2.
