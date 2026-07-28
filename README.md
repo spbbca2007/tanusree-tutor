@@ -1,40 +1,35 @@
-# Grade 7 — Term 1, Batch 2 (3 new topics)
+# Rational & Irrational — real step-by-step solutions added
+
+## The root cause (now confirmed)
+`solver.js` has a hand-written `solutions` object with genuinely good 4-step
+breakdowns — but before this fix, it only had **6 entries total**, all from the
+original Grade 6 build. Every question I've written for Grade 7 (all ~106 of them,
+across 7 topics) had no entry there, so clicking "Show me how to solve this" always
+fell through to `generateGenericSolution()` — a thin fallback that just recycles the
+`hint` and `explanation` fields already shown inline, wrapped as 3 generic steps.
+That's exactly why Rational & Irrational felt thin — it was never given real content,
+not a bug in the code.
 
 ## What changed
-Only 2 files: `curriculum.js`, `visuals.js`. (`app.js` and `state.js` unchanged
-since the last delivery.)
+Only 1 file: `solver.js`. Added 14 curated 4-step solutions — one for every question
+in Rational & Irrational — matching the depth and style of the original hand-written
+examples (a clear reasoning step, worked math, and a tip where useful).
 
-## A heads-up on this batch
-Midway through building this, the session's working files were reset (a container
-limit, unrelated to anything you did). I rebuilt the entire working state from your
-previously delivered zips before continuing — nothing was lost, but it's why this
-took a bit longer. Everything below was validated fresh after the rebuild, so it's
-just as solid as every prior batch.
-
-## What's new — Term 1 is now complete (7 of 7 topics)!
-5. **Fractions & Recurring Decimals** — 15 questions, long-division-style visual,
-   live "type a fraction, see if it terminates or recurs" tool
-6. **Mixed Numbers & Fraction-Decimal-Percent** — 14 questions (adding mixed
-   numbers with carrying, converting between all three forms), live triple-converter tool
-7. **Algebra: Grouping & Expanding** — 14 questions (collecting like terms,
-   expanding brackets including negatives), live bracket-expansion visual
-
-## Validation done before packaging
-- Syntax-checked every file
-- Every question's answer confirmed present in its own options list (43 more
-  questions checked)
-- No duplicate question IDs — checked within each topic AND across all 7 Grade 7
-  topics combined (not just the 3 new ones)
-- All 6 new visual function names confirmed unique
-- Full end-to-end simulation across all 7 Grade 7 topics: practice queues, question
-  bank, term grouping, recommendations — all verified
-- Confirmed Grade 6 (11 topics) completely untouched
+## Validation done
+- Confirmed all 14 questions in the topic now have a curated entry (zero left
+  falling back to the generic version)
+- Cross-checked every solution's final step against the question's actual answer key
+  — all 14 consistent
+- Syntax-checked every file in the project, not just this one
 
 ## How to deploy
-Copy `curriculum.js` and `visuals.js` into `D:\Tanu\tanusree-tutor\src\`, overwriting
-the existing ones. Commit and push via GitHub Desktop, Netlify auto-deploys.
+Copy `solver.js` into `D:\Tanu\tanusree-tutor\src\`, overwriting the existing one.
+Commit and push via GitHub Desktop, Netlify auto-deploys.
 
-## What's next
-Term 1 is done! Next up is Term 2: Area (Parallelogram & Trapezium), Volume
-(Triangular Prism), Transformations (Translation/Reflection/Rotation/Enlargement)
-— 3 topics. Say "continue with Term 2" whenever you're ready.
+## What's still outstanding
+The same gap exists for the other 6 Grade 7 topics (Integer Operations, Factors/
+Indices, Percentage, Recurring Decimals, Mixed Numbers, Algebra Grouping/Expanding)
+— roughly 92 more questions still falling back to the generic 3-step version.
+Worth deciding: extend this to all of Term 1 now, or prioritize differently (e.g.
+only hard/challenge-tier questions, since those are where real scaffolding matters
+most) — let me know and I'll pick up the next batch.
