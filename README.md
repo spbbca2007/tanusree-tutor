@@ -1,29 +1,40 @@
-# Factors, Multiples, Primes & Indices — expanded
+# Grade 7 — Term 1, Batch 2 (3 new topics)
 
 ## What changed
-Only 1 file: `curriculum.js`. No other files touched.
+Only 2 files: `curriculum.js`, `visuals.js`. (`app.js` and `state.js` unchanged
+since the last delivery.)
 
-## What's new in this topic
-Two new explanation blocks:
-- **Divisibility rules** — quick mental checks for ÷2, ÷3, ÷5, ÷9, ÷10 without long
-  division (e.g. "digits add up to a multiple of 3" for ÷3)
-- **Power of a power** — the third index law: (a^m)^n = a^(m×n), with a worked
-  example showing it matches the slow "expand it all out" method
+## A heads-up on this batch
+Midway through building this, the session's working files were reset (a container
+limit, unrelated to anything you did). I rebuilt the entire working state from your
+previously delivered zips before continuing — nothing was lost, but it's why this
+took a bit longer. Everything below was validated fresh after the rebuild, so it's
+just as solid as every prior batch.
 
-5 new practice questions (2 easy divisibility-rule checks, 2 medium power-of-a-power,
-1 hard combining both power rules together) — topic now has 20 questions total
-(was 15), still spread across easy/medium/hard.
+## What's new — Term 1 is now complete (7 of 7 topics)!
+5. **Fractions & Recurring Decimals** — 15 questions, long-division-style visual,
+   live "type a fraction, see if it terminates or recurs" tool
+6. **Mixed Numbers & Fraction-Decimal-Percent** — 14 questions (adding mixed
+   numbers with carrying, converting between all three forms), live triple-converter tool
+7. **Algebra: Grouping & Expanding** — 14 questions (collecting like terms,
+   expanding brackets including negatives), live bracket-expansion visual
 
-## A build note, for transparency
-My first attempt at this had a missing comma that would have broken the page for
-anyone who opened this topic — caught it because I test by actually importing the
-file and simulating what the app does with it, not just a syntax check (which,
-it turns out, didn't catch this particular error). Re-checked and confirmed clean
-before packaging this version.
+## Validation done before packaging
+- Syntax-checked every file
+- Every question's answer confirmed present in its own options list (43 more
+  questions checked)
+- No duplicate question IDs — checked within each topic AND across all 7 Grade 7
+  topics combined (not just the 3 new ones)
+- All 6 new visual function names confirmed unique
+- Full end-to-end simulation across all 7 Grade 7 topics: practice queues, question
+  bank, term grouping, recommendations — all verified
+- Confirmed Grade 6 (11 topics) completely untouched
 
 ## How to deploy
-Copy `curriculum.js` into `D:\Tanu\tanusree-tutor\src\`, overwriting the existing
-one. Commit and push via GitHub Desktop, Netlify auto-deploys.
+Copy `curriculum.js` and `visuals.js` into `D:\Tanu\tanusree-tutor\src\`, overwriting
+the existing ones. Commit and push via GitHub Desktop, Netlify auto-deploys.
 
-If she's already partway through this topic, her existing progress isn't affected —
-the new questions just join the same pool the adaptive queue pulls from.
+## What's next
+Term 1 is done! Next up is Term 2: Area (Parallelogram & Trapezium), Volume
+(Triangular Prism), Transformations (Translation/Reflection/Rotation/Enlargement)
+— 3 topics. Say "continue with Term 2" whenever you're ready.
