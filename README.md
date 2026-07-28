@@ -1,35 +1,45 @@
-# Rational & Irrational — real step-by-step solutions added
-
-## The root cause (now confirmed)
-`solver.js` has a hand-written `solutions` object with genuinely good 4-step
-breakdowns — but before this fix, it only had **6 entries total**, all from the
-original Grade 6 build. Every question I've written for Grade 7 (all ~106 of them,
-across 7 topics) had no entry there, so clicking "Show me how to solve this" always
-fell through to `generateGenericSolution()` — a thin fallback that just recycles the
-`hint` and `explanation` fields already shown inline, wrapped as 3 generic steps.
-That's exactly why Rational & Irrational felt thin — it was never given real content,
-not a bug in the code.
+# Visual Phase 1 — Integer Operations sandbox
 
 ## What changed
-Only 1 file: `solver.js`. Added 14 curated 4-step solutions — one for every question
-in Rational & Irrational — matching the depth and style of the original hand-written
-examples (a clear reasoning step, worked math, and a tip where useful).
+Only 1 file: `visuals.js`.
 
-## Validation done
-- Confirmed all 14 questions in the topic now have a curated entry (zero left
-  falling back to the generic version)
-- Cross-checked every solution's final step against the question's actual answer key
-  — all 14 consistent
-- Syntax-checked every file in the project, not just this one
+## What's new
+**"Feel it" stage (interactive):** Type ANY two integers and pick an operation —
+watch it actually animate for those exact numbers:
+- Add/Subtract: a real number line that rescales to fit whatever you typed, with a
+  dot that visibly slides from the start value to the answer (not an instant jump)
+- Multiply/Divide: a genuine sign-pairing animation — two tokens (red for negative,
+  green for positive) slide together; if both are negative they merge into one
+  green token (paired and cancelled → positive), if only one is negative it stays
+  red (unpaired → negative)
+
+**"See it" stage (animated):** Upgraded from click-through static steps to a real
+auto-playing animation. A "🔀 New example" button cycles through 5 different
+number pairs so it doesn't feel identical every visit, and "▶ Play" animates the
+dot sliding to the answer.
+
+## How this was tested (more rigorously than previous batches)
+Puppeteer's Chromium download is blocked by this environment's network rules, so I
+used `jsdom` instead — a real JavaScript DOM implementation — to actually execute
+the widget's code, not just check that it parses:
+- Confirmed -7 + -9 animates to exactly -16
+- Confirmed -7 × -9 animates to 63 with the correct "two negatives cancelled"
+  explanation
+- Confirmed 6 × -4 stays -24 with "one negative had no partner" explanation
+- Confirmed -20 ÷ -5 animates to 4
+- Confirmed the SVG actually renders real elements, not an empty shell
+- Tested edge cases: divide by zero (shows "undefined", doesn't crash), blank
+  inputs (defaults to 0, doesn't crash), zero values
+- Cycled through all 5 shuffle examples and confirmed the Play animation lands on
+  the correct final answer
+- Re-confirmed no new function-name collisions, and all 7 Grade 7 topics plus
+  Grade 6 still work end-to-end
 
 ## How to deploy
-Copy `solver.js` into `D:\Tanu\tanusree-tutor\src\`, overwriting the existing one.
+Copy `visuals.js` into `D:\Tanu\tanusree-tutor\src\`, overwriting the existing one.
 Commit and push via GitHub Desktop, Netlify auto-deploys.
 
-## What's still outstanding
-The same gap exists for the other 6 Grade 7 topics (Integer Operations, Factors/
-Indices, Percentage, Recurring Decimals, Mixed Numbers, Algebra Grouping/Expanding)
-— roughly 92 more questions still falling back to the generic 3-step version.
-Worth deciding: extend this to all of Term 1 now, or prioritize differently (e.g.
-only hard/challenge-tier questions, since those are where real scaffolding matters
-most) — let me know and I'll pick up the next batch.
+## What's next
+Phase 2 — the same live-animation treatment for Rational & Irrational (numbers
+landing on a number line based on where their square root falls). Say "continue
+with Phase 2" whenever you're ready.
