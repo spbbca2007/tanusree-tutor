@@ -1,36 +1,44 @@
-# Visual Phase 2 — Rational & Irrational number-line placement
+# Visual Phase 5 — Algebra: Grouping & Expanding (the final phase!)
 
 ## What changed
 Only 1 file: `visuals.js`.
 
 ## What's new
-Type any number under a square root, hit "Animate ↗":
-- The number line automatically shows the exact whole numbers surrounding the
-  result (e.g. √50 shows 7 and 8, since 49 and 64 are the nearest perfect squares)
-- A dot genuinely animates sliding to the true position of the root
-- Perfect squares (like √36) land exactly on a whole number and turn green —
-  "Rational"
-- Non-perfect squares land between two whole numbers and stay purple —
-  "Irrational, never landing exactly on a whole number"
+Type any multiplier and constant, hit "Animate ↗": two arrows genuinely draw
+themselves (using an SVG stroke-dash animation, not an instant swap) from the
+multiplier to the x-term, then to the constant term — landing on each one in
+sequence before the combined result appears. This directly visualizes the most
+common mistake this topic targets: only multiplying the first term inside the
+bracket and forgetting the second.
 
-This directly builds the intuition behind the "which two whole numbers does √20
-lie between" question style from her practice set — instead of just calculating
-it, she sees why.
-
-## Testing (via jsdom, same rigor as Phase 1)
-- √20 correctly shown between 4 and 5
-- √36 (perfect square) correctly lands exactly on 6, marked rational
-- √50 correctly shown between 7 and 8
-- √0 handled correctly (edge case)
-- Negative input handled gracefully — clamped to 0, no crash
-- Confirmed real SVG elements render (8 children), not an empty shell
-- No new function-name collisions
-- All 7 Grade 7 topics still load their visuals correctly
+## Testing (jsdom, same rigor as every phase)
+- Default 3(x+4) → 3x+12 confirmed
+- Negative multiplier -2(x+5) → -2x-10 confirmed, with correct sign display
+- Double-negative case -3(x-4) → correctly flips to +12 (the exact concept this
+  topic's explanation section emphasizes)
+- Zero multiplier → handled sensibly (0x+0, no crash)
+- Blank inputs → defaults to 0, no crash
+- Animation timing verified: the result text is genuinely empty while the arrows
+  are still "flying," only appearing after both have landed — confirming this
+  isn't just an instant swap dressed up with a delay
+- Confirmed 2 real SVG arrow paths render
+- Full regression: all 7 Grade 7 topics still load, no new function-name
+  collisions across the whole file
 
 ## How to deploy
 Copy `visuals.js` into `D:\Tanu\tanusree-tutor\src\`, overwriting the existing one.
 
-## What's next
-Phase 3 — fill/scale animations for Percentage Deep Dive, Fractions & Recurring
-Decimals, and Mixed Numbers & FDP (3 topics sharing one animation pattern). Say
-"continue with Phase 3" whenever you're ready.
+## That's all 5 phases — Term 1's visual upgrade is complete
+Every topic's "Feel it" sandbox now genuinely animates for whatever numbers she
+types, instead of only demonstrating a fixed example:
+1. Integer Operations — number-line slide + sign-pairing animation
+2. Rational & Irrational — square roots landing on a number line
+3. Percentage, Fractions, Mixed Numbers — fill/scale bar animations (plus a real
+   bug fix for over-100% percentage increases, found from your feedback)
+4. Factors, Multiples, Primes & Indices — a genuinely growing, dynamically-shaped
+   factor tree
+5. Algebra: Grouping & Expanding — flying distribution arrows
+
+Also still open from earlier conversations, whenever you want to pick them up:
+pie-chart views for Fractions/Mixed Numbers, and the paper-photo-analysis
+pipeline (needs a Grok API key).
