@@ -1,7 +1,7 @@
 import { curriculum, bankKeyForTopic } from "./curriculum.js";
 import { defaultState, loadState, saveState, recordAttempt, recordStageVisit, getTopicMastery, getOverallMastery, getWeakSkills, getMostRecentMisconceptions, getRecommendation, getProgressOverview, getTopicStatus, redoTopic } from "./state.js";
 import { tutor } from "./tutor.js";
-import { buildPracticeQueue, recordQuestionSeen, getQuestionBankStats } from "./engine.js";
+import { recordQuestionSeen } from "./engine.js";
 import { questionBank } from "./questionbank.js";
 import { visuals } from "./visuals.js";
 import { exportProgress, importProgress, autoBackupIfDue, getLastBackupInfo, formatBackupTime, getMigrationSummary, getBackupLog } from "./backup.js";
@@ -13,8 +13,7 @@ let state = defaultState();
 let selectedTopicId = curriculum.topics[0].id;
 let selectedLessonId = null;
 let activeStage = "learn";
-let practiceIndex = 0;
-let currentPracticeQueue = [];
+let selectedQuestionId = null;
 let wrongStreak = {};
 let correctStreak = 0;
 let challengeState = null;
@@ -94,7 +93,8 @@ function handleClick(e) {
     case "back-to-topics": renderTopics(); showView("topics"); break;
     case "go-stage": handleGoStage(data.stage); break;
     case "answer-practice": handleAnswer(data.answer); break;
-    case "next-question": nextQuestion(); break;
+    case "select-question": selectedQuestionId=data.questionId; renderLesson(); break;
+    case "back-to-questions": selectedQuestionId=null; renderLesson(); break;
     case "show-solver": handleShowSolver(data.questionId); break;
     case "solver-next-step": handleSolverStep(data.questionId, parseInt(data.step)); break;
     case "redo-topic": handleRedo(data.topicId); break;
@@ -110,7 +110,7 @@ function handleGoStage(stage) {
   activeStage = stage;
   state = recordStageVisit(state, selectedTopicId, selectedLessonId, stage);
   scheduleSave(state);
-  if (stage === "practice") { practiceIndex=0; wrongStreak={}; correctStreak=0; currentPracticeQueue=buildPracticeQueue(state,selectedTopicId); }
+  if (stage === "practice") { selectedQuestionId=null; wrongStreak={}; correctStreak=0; }
   if (stage === "challenge") { initChallenge(); }
   renderLesson();
 }
@@ -335,18 +335,68 @@ function buildInteractive(topic) {
   </div>`;
 }
 
+function currentTopicQuestions() {
+  const key = bankKeyForTopic[selectedTopicId];
+  return (key && questionBank[key]) ? questionBank[key] : [];
+}
+
+function lastAttemptFor(qId) {
+  const attempts = state.attempts || [];
+  for (let i = attempts.length - 1; i >= 0; i--) { if (attempts[i].questionId === qId) return attempts[i]; }
+  return null;
+}
+
 function buildPractice() {
-  if (!currentPracticeQueue.length) currentPracticeQueue = buildPracticeQueue(state, selectedTopicId);
-  if (!currentPracticeQueue.length) return `<div class="vis-placeholder"><p>No questions available. Add questions to the bank for this topic.</p></div>`;
-  if (practiceIndex >= currentPracticeQueue.length) return buildPracticeDone();
-  const q = currentPracticeQueue[practiceIndex];
-  const pct = Math.round(practiceIndex / currentPracticeQueue.length * 100);
+  const all = currentTopicQuestions();
+  if (!all.length) return `<div class="vis-placeholder"><p>No questions available. Add questions to the bank for this topic.</p></div>`;
+  if (!selectedQuestionId) return buildQuestionList(all);
+  const q = all.find(x => x.id === selectedQuestionId);
+  if (!q) { selectedQuestionId = null; return buildQuestionList(all); }
+  return buildQuestionCard(q);
+}
+
+function buildQuestionList(all) {
+  const attemptedCount = all.filter(q => lastAttemptFor(q.id)).length;
+  const correctCount = all.filter(q => { const a = lastAttemptFor(q.id); return a && a.correct; }).length;
+  const tiers = ["easy","medium","hard"];
+  const tierLabels = {easy:"Easy",medium:"Medium",hard:"Hard"};
+  const sections = tiers.map(tier => {
+    const qs = all.filter(q => q.tier === tier);
+    if (!qs.length) return "";
+    const items = qs.map(q => {
+      const a = lastAttemptFor(q.id);
+      const status = !a ? "qs-new" : a.correct ? "qs-correct" : "qs-wrong";
+      const icon = !a ? "" : a.correct ? "✓" : "✕";
+      const preview = q.prompt.length > 70 ? q.prompt.slice(0,70)+"…" : q.prompt;
+      return `<button class="qlist-item ${status}" data-action="select-question" data-question-id="${q.id}"><span class="qlist-icon">${icon}</span><span class="qlist-prompt">${preview}</span></button>`;
+    }).join("");
+    return `<div class="qlist-tier"><h4 class="qlist-tier-label">${tierLabels[tier]}</h4><div class="qlist-grid">${items}</div></div>`;
+  }).join("");
+  return `<div class="qlist-wrap">
+    <style>
+      .qlist-summary{display:flex;gap:16px;margin-bottom:16px;font-size:13px;color:#666}
+      .qlist-summary b{color:#333}
+      .qlist-tier-label{font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.03em;margin:16px 0 8px}
+      .qlist-tier:first-child .qlist-tier-label{margin-top:0}
+      .qlist-grid{display:flex;flex-direction:column;gap:8px}
+      .qlist-item{display:flex;align-items:center;gap:10px;text-align:left;padding:12px 14px;border-radius:10px;border:1.5px solid #e5e5e5;background:#fff;cursor:pointer;font-size:14px;color:#333;width:100%}
+      .qlist-item:hover{border-color:#4a90d9}
+      .qlist-item.qs-correct{border-color:#3d9970;background:#f0faf5}
+      .qlist-item.qs-wrong{border-color:#e07a3d;background:#fff8f0}
+      .qlist-icon{width:18px;flex-shrink:0;font-weight:700;text-align:center}
+      .qs-correct .qlist-icon{color:#3d9970}
+      .qs-wrong .qlist-icon{color:#e07a3d}
+    </style>
+    <div class="qlist-summary"><span><b>${attemptedCount}</b> of ${all.length} attempted</span><span><b>${correctCount}</b> correct so far</span></div>
+    ${sections}
+  </div>`;
+}
+
+function buildQuestionCard(q) {
   return `<div class="practice-layout">
-    <div class="practice-progress">
-      <span class="progress-label">Question ${practiceIndex+1} of ${currentPracticeQueue.length}</span>
-      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-    </div>
+    <button class="btn-back" data-action="back-to-questions" style="margin-bottom:12px">← All questions</button>
     <div class="question-card">
+      <span class="tier-badge tier-${q.tier}">${q.tier}</span>
       <p class="question-prompt">${q.prompt}</p>
       <div class="answer-grid" id="ans-grid">
         ${q.options.map(opt => `<button class="answer-btn" data-action="answer-practice" data-answer="${opt}">${opt}</button>`).join("")}
@@ -358,23 +408,9 @@ function buildPractice() {
   </div>`;
 }
 
-function buildPracticeDone() {
-  const correct = currentPracticeQueue.filter(q => (state.attempts||[]).slice(-currentPracticeQueue.length).find(a => a.questionId===q.id&&a.correct)).length;
-  const pct = Math.round(correct/currentPracticeQueue.length*100);
-  return `<div class="practice-done">
-    <div class="done-circle ${pct>=80?'done-green':pct>=50?'done-amber':'done-red'}">
-      <span class="done-pct">${pct}%</span><span class="done-label">${correct}/${currentPracticeQueue.length} correct</span>
-    </div>
-    <p class="done-message">${pct>=80?"Excellent work! You've mastered this.":pct>=50?"Good effort! A few more practice runs will get you there.":"Keep going — practice makes perfect."}</p>
-    <div class="done-actions">
-      <button class="btn-primary" data-action="go-stage" data-stage="challenge">Try the challenge →</button>
-      <button class="btn-secondary" data-action="go-stage" data-stage="practice" style="margin-left:8px">Practise again</button>
-    </div>
-  </div>`;
-}
-
 function handleAnswer(answer) {
-  const q = currentPracticeQueue[practiceIndex];
+  const all = currentTopicQuestions();
+  const q = all.find(x => x.id === selectedQuestionId);
   if (!q) return;
   const correct = answer === q.answer;
   if (correct) correctStreak++; else { correctStreak=0; wrongStreak[q.id]=(wrongStreak[q.id]||0)+1; }
@@ -387,18 +423,19 @@ function handleAnswer(answer) {
   });
   const fb = document.getElementById("feedback-area"); if(!fb) return;
   const msg = correct ? tutor.correct(correctStreak) : tutor.incorrect(q.misconception, getTopic().title);
+  const idx = all.findIndex(x => x.id === q.id);
+  const nextQ = all[idx+1];
   fb.innerHTML = `<div class="feedback-msg ${correct?"feedback-correct":"feedback-incorrect"}">
     <strong>${msg.title}</strong><p>${msg.body}</p>
     ${!correct?`<p class="explanation">${q.explanation}</p>`:""}
     <div class="feedback-actions">
       <button class="btn-solver" data-action="show-solver" data-question-id="${q.id}">📋 Show me how to solve this</button>
-      <button class="btn-primary" data-action="next-question" style="margin-left:8px">${practiceIndex+1<currentPracticeQueue.length?"Next question →":"See results →"}</button>
+      <button class="btn-secondary" data-action="back-to-questions" style="margin-left:8px">← All questions</button>
+      ${nextQ?`<button class="btn-primary" data-action="select-question" data-question-id="${nextQ.id}" style="margin-left:8px">Next question →</button>`:""}
     </div>
   </div>
   <div id="solver-panel-${q.id}" class="solver-panel" style="display:none"></div>`;
 }
-
-function nextQuestion() { practiceIndex++; renderLesson(); }
 
 // ── Challenge ──────────────────────────────────────────────────
 function initChallenge() {

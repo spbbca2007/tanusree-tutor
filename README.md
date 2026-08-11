@@ -1,79 +1,74 @@
-# Sparky update — Factors/LCM/HCF + Indices, from the Term 1 workbook
+# Sparky update — free question navigation
 
-Source material: the 28-page workbook PDF you uploaded (pages 1–15 cover this
-topic; Congruency and Statistics pages were intentionally left out — parked
-for a later term as agreed).
+Addresses both things you raised: "only 1–6 questions" and "can't move on
+without solving."
 
-## Files changed
-- `curriculum.js` — only the `g7-factors-indices` topic touched
-- `visuals.js` — only the `g7-factors-indices` topic's `interactive` field touched
+## What was actually happening (not a bug)
 
-Every other topic in both files is byte-for-byte identical to what you
-uploaded (verified programmatically, not just by eye).
+`engine.js`'s `buildPracticeQueue(state, topicId, count=6)` was serving a
+fixed queue of 6 adaptively-picked questions per session, and the practice
+UI walked through that queue by index, one at a time, only revealing "Next
+question" after she'd submitted an answer to the current one. That's where
+both symptoms came from — the fixed queue size, and the answer-gated
+progression.
 
-## curriculum.js changes
+## What changed
 
-**2 new lesson blocks**, added after the existing content:
-- "Working backwards — solving for the exponent" (uses the bacteria-doubling
-  story from your workbook: 2^h = 32, count the 2's)
-- A tip on negative bases (odd exponent → stays negative, even → positive)
+**Only `app.js` was touched.** `engine.js`, `curriculum.js`, `visuals.js`,
+`questionbank.js` are all untouched by this batch (this pairs with the
+separate Factors/Indices content batch, but is independent of it — free
+navigation now applies to every topic automatically, not just that one).
 
-**13 new practice questions**, all sourced from real problems in the
-workbook, covering skills the question bank didn't have before:
-- HCF/LCM word problems with real contexts (gift bags, buses, saplings —
-  straight from the workbook's own numbers)
-- HCF/LCM of consecutive numbers and of two primes (the "conjecture" pages)
-- Solving *for* the exponent (2^?=16, 10^x=100000, 7^?=16807) — this was a
-  totally new question type, the bank only had "evaluate the power" before
-- Negative base powers: (-4)³
-- Powers-of-ten sanity check (is 10⁷ really a million? — no, it's ten times that)
-- Base conversion: writing 4³ as a power of 2
-- A genuine reasoning question (Mary/David, squares vs. cubes) that isn't
-  answerable by rote calculation alone
+The practice stage is now a **question list, not a queue**:
+- Shows the *entire* bank for the topic (all difficulty tiers, grouped
+  Easy/Medium/Hard), not a capped subset
+- Tap any question, in any order — no gating, no suggested "next"
+- Each question shows a status mark: unmarked (not attempted), ✓ (last
+  attempt correct), ✕ (last attempt incorrect) — based on her real attempt
+  history, always reflecting the *most recent* attempt so re-tries update it
+- A "← All questions" button is visible on the question screen **before**
+  she answers, not just after — she can back out any time without solving
+  anything
+- After answering (right or wrong), she gets three equal options: see the
+  step-by-step solver, go back to the list, or jump to the next question in
+  the list — none of them forced
+- A running summary ("X of Y attempted, Z correct so far") replaces the old
+  end-of-queue percentage screen, since there's no longer a fixed end
 
-Total bank for this topic: 20 → 33 questions.
-
-## visuals.js changes
-
-The existing factor-tree "Feel it" visual is **completely untouched** —
-same code, same behavior. Added alongside it:
-
-- A **"Next visual →" button** that toggles to a new second view
-- **Power Blocks**: type a base and a whole-number exponent, and it animates
-  group-by-group (like the bacteria doubling each hour), landing on the
-  correct total, with the full multiplication written out underneath
-
-Handles: exponent 0, 0^0 (flagged as a special case), negative bases,
-non-integer exponents (rejected with a message — this app covers whole-number
-exponents), blank inputs, and large exponents (visual caps at 8 groups but
-the math stays exact and it says how many more there are).
+`buildPracticeQueue` in `engine.js` is no longer called from `app.js` (the
+import was removed), but the function itself is untouched in case it's
+useful later for something like a "quick practice" shortcut — didn't delete
+it since that wasn't asked for.
 
 ## Testing performed
 
-- `node --check` on both files
-- Every new question's answer verified against real computation (not just
-  eyeballed) — HCF/LCM via actual Euclidean algorithm, powers via `Math.pow`,
-  cross-checked against what the workbook itself worked out
-- Structural integrity check: every question's `answer` is confirmed present
-  in its own `options`, no duplicate IDs, no duplicate options, valid tiers
-- `questionBank` auto-derivation re-run against the new curriculum — confirms
-  the existing `questionbank.js` picks up all 33 questions with no code
-  changes needed there
-- Power Blocks widget: full jsdom DOM execution, 10 scenarios — the bacteria
-  case (2^5=32), zero exponent, 0^0, negative base, blank base, negative
-  exponent, non-integer exponent, large-exponent capping, large-base
-  fallback, decimal-base fallback. One real bug caught and fixed during this
-  testing: `parseInt("2.5")` was silently truncating to `2` instead of being
-  rejected as non-integer — fixed by parsing as float first
-- Diffed the actual spliced files against your uploads line-by-line —
-  confirmed only the intended lines changed
-- Loaded the real spliced `visuals.js` as a module and ran a full
-  integration test: original factor tree still renders and computes
-  correctly, toggle switches both directions, Power Blocks renders and
-  computes correctly, and switching back to the factor tree and re-running
-  it on a new number (36) still works
+This changes core session/interaction logic, not an isolated widget, so it
+got a correspondingly bigger test:
 
-## Collision check
-`window.riDraw` and `window.fiDraw` are still the only duplicate global
-names — both are the pre-existing Grade 6 collisions you flagged as
-out-of-scope. No new collisions introduced.
+- `node --check` on the final file
+- Diffed against your upload — 13 changed regions, all accounted for by the
+  intended edit (nothing accidentally touched)
+- Built a real test harness: minimal but functionally genuine stand-ins for
+  `state.js`, `tutor.js`, `db.js`, `backup.js`, `solver.js`, `auth.js` (the
+  modules this app.js depends on that weren't shared), then loaded the
+  **actual** `app.js` in jsdom with a real DOM and **clicked through the
+  real UI** — not a logic simulation, actual `element.click()` dispatched
+  through the same event-delegation code that runs in the browser
+- End-to-end scenarios verified this way, against the full 33-question
+  Factors/Indices bank:
+  - All 33 questions listed (not capped at 6)
+  - Opening a question out of order (jumped straight to a "hard" tier
+    question, skipping everything before it)
+  - Backing out of a question **before answering it** — confirms she's never
+    stuck
+  - Answering incorrectly still leaves a way forward (list + solver + next
+    all present, nothing blocked)
+  - Status icon updates to ✕ after a wrong answer
+  - Re-attempting the same question and getting it right flips the status
+    to ✓ (confirms "most recent attempt" logic, not "first attempt ever")
+  - All three tier sections (Easy/Medium/Hard) render
+- Regression pass on top of that: Parent view and Topics view still render
+  cleanly, and the same free-navigation flow was independently re-tested
+  end-to-end on a *second* topic (`g7-integer-ops`) to confirm this isn't
+  special-cased to one topic — it's generic, the same way the rest of the
+  codebase already auto-derives from `curriculum.topics`
