@@ -429,7 +429,7 @@ function buildWorkspace() {
         <button class="ws-btn" id="ws-save">Save as image</button>
       </div>
     </div>
-    <canvas id="ws-canvas"></canvas>
+    <canvas id="ws-canvas" class="ws-canvas"></canvas>
     <div class="ws-check-row">
       <button class="ws-check-btn" id="ws-check">🧑‍🏫 Check my work</button>
     </div>
