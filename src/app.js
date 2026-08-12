@@ -405,7 +405,152 @@ function buildQuestionCard(q) {
       <div id="hint-area" class="hint-area" style="display:none"><p>${q.hint}</p></div>
     </div>
     <div id="feedback-area" class="feedback-area"></div>
+    ${buildWorkspace()}
   </div>`;
+}
+
+function buildWorkspace() {
+  return `<div class="ws-wrap">
+    <style>
+      .ws-wrap{background:#f7f5f0;border-radius:12px;padding:14px;margin-top:14px}
+      .ws-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+      .ws-label{font-size:13px;color:#666}
+      .ws-actions{display:flex;gap:8px}
+      .ws-btn{padding:6px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#444;font-size:13px;cursor:pointer}
+      .ws-canvas{width:100%;height:260px;border-radius:8px;border:1.5px solid #ddd;background:#fff;touch-action:none;display:block;cursor:crosshair}
+      .ws-check-row{display:flex;justify-content:flex-end;margin-top:8px}
+      .ws-check-btn{padding:8px 16px;border-radius:8px;border:1px solid #4a90d9;background:#fff;color:#4a90d9;font-size:13px;cursor:pointer}
+      .ws-banner{margin-top:8px;padding:10px 12px;border-radius:8px;background:#eef5fc;border:1px solid #cfe2f3;color:#2c5f8a;font-size:13px;display:none}
+    </style>
+    <div class="ws-header">
+      <span class="ws-label">✏️ Working space — write or draw your steps</span>
+      <div class="ws-actions">
+        <button class="ws-btn" id="ws-clear">Clear</button>
+        <button class="ws-btn" id="ws-save">Save as image</button>
+      </div>
+    </div>
+    <canvas id="ws-canvas"></canvas>
+    <div class="ws-check-row">
+      <button class="ws-check-btn" id="ws-check">🧑‍🏫 Check my work</button>
+    </div>
+    <div id="ws-banner" class="ws-banner"></div>
+  </div>
+  <script>
+    (function(){
+      if (typeof window.__wsCleanup === "function") { window.__wsCleanup(); }
+
+      var PAUSE_THRESHOLD_MS = window.SPARKY_PAUSE_THRESHOLD_MS || 20000;
+      var POLL_MS = window.SPARKY_WS_POLL_MS || 1000;
+
+      var canvas = document.getElementById("ws-canvas");
+      if (!canvas) return;
+      var ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      function resizeCanvas(){
+        var rect = canvas.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#2c2c2a";
+      }
+      resizeCanvas();
+
+      var drawing = false;
+      var hasContent = false;
+      var lastStrokeTime = Date.now();
+      var pauseTriggered = false;
+
+      function pos(e){
+        var rect = canvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      }
+      function widthFor(e){
+        var isPen = e.pointerType === "pen";
+        var p = (isPen || e.pointerType === "touch") && e.pressure > 0 ? e.pressure : 0.5;
+        return Math.max(1.2, p * 4.5);
+      }
+
+      function showBanner(text){
+        var b = document.getElementById("ws-banner");
+        if (!b) return;
+        b.textContent = text;
+        b.style.display = "block";
+      }
+      function hideBanner(){
+        var b = document.getElementById("ws-banner");
+        if (b) b.style.display = "none";
+      }
+
+      // Single integration point for the future Grok-backed step review.
+      // Today this only shows a placeholder banner. Later, replace the body
+      // of this function with a real call — e.g. POST canvas.toDataURL() plus
+      // the question context to a Netlify function that calls Grok — gated by
+      // the confirm-before-save step already agreed for accuracy safety.
+      function requestStepReview(reason){
+        if (reason === "pause") showBanner("Looks like you paused on this one — want a hint? (AI review isn't connected yet)");
+        else showBanner("Checking your work… (AI review isn't connected yet)");
+      }
+
+      canvas.addEventListener("pointerdown", function(e){
+        e.preventDefault();
+        drawing = true;
+        hasContent = true;
+        lastStrokeTime = Date.now();
+        pauseTriggered = false;
+        hideBanner();
+        var p = pos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", function(e){
+        if (!drawing) return;
+        e.preventDefault();
+        lastStrokeTime = Date.now();
+        var p = pos(e);
+        ctx.lineWidth = widthFor(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      });
+      function stopDrawing(){ drawing = false; }
+      canvas.addEventListener("pointerup", stopDrawing);
+      canvas.addEventListener("pointerleave", stopDrawing);
+      canvas.addEventListener("pointercancel", stopDrawing);
+
+      document.getElementById("ws-clear").addEventListener("click", function(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasContent = false;
+        pauseTriggered = false;
+        hideBanner();
+      });
+      document.getElementById("ws-save").addEventListener("click", function(){
+        var link = document.createElement("a");
+        link.download = "tanusree-work.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+      document.getElementById("ws-check").addEventListener("click", function(){
+        if (!hasContent) { showBanner("Write out your steps first, then tap Check my work."); return; }
+        requestStepReview("manual");
+      });
+
+      var pauseChecker = setInterval(function(){
+        if (!hasContent || pauseTriggered) return;
+        if (Date.now() - lastStrokeTime >= PAUSE_THRESHOLD_MS) {
+          pauseTriggered = true;
+          requestStepReview("pause");
+        }
+      }, POLL_MS);
+
+      window.__wsCleanup = function(){ clearInterval(pauseChecker); };
+    })();
+  </script>`;
 }
 
 function handleAnswer(answer) {
