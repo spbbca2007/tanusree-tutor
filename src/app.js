@@ -396,7 +396,10 @@ function buildQuestionCard(q) {
   return `<div class="practice-layout">
     <button class="btn-back" data-action="back-to-questions" style="margin-bottom:12px">← All questions</button>
     <div class="question-card">
-      <span class="tier-badge tier-${q.tier}">${q.tier}</span>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="tier-badge tier-${q.tier}">${q.tier}</span>
+        <span id="ws-status-badge" class="ws-status-badge">Not attempted</span>
+      </div>
       <p class="question-prompt">${q.prompt}</p>
       <div class="answer-grid" id="ans-grid">
         ${q.options.map(opt => `<button class="answer-btn" data-action="answer-practice" data-answer="${opt}">${opt}</button>`).join("")}
@@ -405,38 +408,65 @@ function buildQuestionCard(q) {
       <div id="hint-area" class="hint-area" style="display:none"><p>${q.hint}</p></div>
     </div>
     <div id="feedback-area" class="feedback-area"></div>
-    ${buildWorkspace()}
+    ${buildWorkspace(q.id)}
   </div>`;
 }
 
-function buildWorkspace() {
-  return `<div class="ws-wrap">
+function buildWorkspace(questionId) {
+  return `<div class="ws-grid" id="ws-grid">
     <style>
-      .ws-wrap{background:#f7f5f0;border-radius:12px;padding:14px;margin-top:14px}
+      .ws-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px;transition:grid-template-columns .3s ease}
+      .ws-panel{background:#f7f5f0;border-radius:12px;padding:14px}
       .ws-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
       .ws-label{font-size:13px;color:#666}
       .ws-actions{display:flex;gap:8px}
       .ws-btn{padding:6px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#444;font-size:13px;cursor:pointer}
       .ws-canvas{width:100%;height:260px;border-radius:8px;border:1.5px solid #ddd;background:#fff;touch-action:none;display:block;cursor:crosshair}
-      .ws-check-row{display:flex;justify-content:flex-end;margin-top:8px}
-      .ws-check-btn{padding:8px 16px;border-radius:8px;border:1px solid #4a90d9;background:#fff;color:#4a90d9;font-size:13px;cursor:pointer}
-      .ws-banner{margin-top:8px;padding:10px 12px;border-radius:8px;background:#eef5fc;border:1px solid #cfe2f3;color:#2c5f8a;font-size:13px;display:none}
+      .ws-canvas:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,144,217,0.25)}
+      .ws-btn-row{display:flex;gap:8px;margin-top:10px}
+      .ws-btn-row button{flex:1;padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#444;font-size:13px;cursor:pointer}
+      .ws-check-btn{border-color:#4a90d9!important;color:#4a90d9!important}
+      .ws-complete-btn.is-complete{border-color:#3d9970!important;color:#3d9970!important}
+      .ws-review-col{display:none;flex-direction:column;background:#eef5fc;border-radius:12px;padding:14px}
+      .ws-review-label{font-size:13px;color:#666;margin-bottom:8px}
+      .ws-review-empty{font-size:13px;color:#999;margin:auto;text-align:center}
+      .ws-review-msg{font-size:13px;color:#2c5f8a;margin:0}
+      .ws-status-badge{font-size:12px;color:#999}
+      .ws-status-badge.is-complete{color:#3d9970}
     </style>
-    <div class="ws-header">
-      <span class="ws-label">✏️ Working space — write or draw your steps</span>
-      <div class="ws-actions">
-        <button class="ws-btn" id="ws-clear">Clear</button>
-        <button class="ws-btn" id="ws-save">Save as image</button>
+    <div class="ws-panel">
+      <div class="ws-header">
+        <span class="ws-label">✏️ Working space — write or draw your steps</span>
+        <div class="ws-actions">
+          <button class="ws-btn" id="ws-clear">Clear</button>
+          <button class="ws-btn" id="ws-save">Save as image</button>
+        </div>
+      </div>
+      <canvas id="ws-canvas" class="ws-canvas" tabindex="0"></canvas>
+      <div class="ws-btn-row">
+        <button class="ws-check-btn" id="ws-check">🧑‍🏫 Check my work</button>
+        <button class="ws-complete-btn" id="ws-complete">Mark complete</button>
+        <button id="ws-redo" style="display:none">Redo</button>
       </div>
     </div>
-    <canvas id="ws-canvas" class="ws-canvas"></canvas>
-    <div class="ws-check-row">
-      <button class="ws-check-btn" id="ws-check">🧑‍🏫 Check my work</button>
+    <div class="ws-review-col" id="ws-review-col">
+      <span class="ws-review-label">AI feedback</span>
+      <div id="ws-review-panel" class="ws-review-empty">Tap "Check my work" to see feedback here.</div>
     </div>
-    <div id="ws-banner" class="ws-banner"></div>
   </div>
   <script>
     (function(){
+      var WS_COMPLETE_KEY = "sparky-workspace-complete";
+      var questionId = ${JSON.stringify(questionId)};
+
+      function getCompletedSet(){
+        try { return new Set(JSON.parse(localStorage.getItem(WS_COMPLETE_KEY) || "[]")); }
+        catch(e) { return new Set(); }
+      }
+      function saveCompletedSet(set){
+        try { localStorage.setItem(WS_COMPLETE_KEY, JSON.stringify(Array.from(set))); } catch(e) {}
+      }
+
       if (typeof window.__wsCleanup === "function") { window.__wsCleanup(); }
 
       var PAUSE_THRESHOLD_MS = window.SPARKY_PAUSE_THRESHOLD_MS || 20000;
@@ -447,22 +477,45 @@ function buildWorkspace() {
       var ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      function resizeCanvas(){
-        var rect = canvas.getBoundingClientRect();
-        var dpr = window.devicePixelRatio || 1;
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.strokeStyle = "#2c2c2a";
-      }
-      resizeCanvas();
-
       var drawing = false;
       var hasContent = false;
       var lastStrokeTime = Date.now();
       var pauseTriggered = false;
+
+      // Resizing a canvas's width/height ALWAYS wipes its pixel content —
+      // that's just how <canvas> works. Since this now runs every time the
+      // review panel expands/collapses (not just once at load), a naive
+      // resize would silently erase her work the moment she asks for a
+      // review. So: snapshot whatever's currently drawn to an offscreen
+      // canvas first, resize, then draw the snapshot back — scaled to the
+      // new size. Not pixel-perfect if the aspect ratio changes a lot, but
+      // nothing gets lost.
+      function resizeCanvas(){
+        var rect = canvas.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        var cssW = rect.width, cssH = rect.height;
+
+        var snapshot = null;
+        if (hasContent && canvas.width > 0 && canvas.height > 0) {
+          var temp = document.createElement("canvas");
+          temp.width = canvas.width;
+          temp.height = canvas.height;
+          temp.getContext("2d").drawImage(canvas, 0, 0);
+          snapshot = temp;
+        }
+
+        canvas.width = cssW * dpr;
+        canvas.height = cssH * dpr;
+        ctx.scale(dpr, dpr);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#2c2c2a";
+
+        if (snapshot) {
+          ctx.drawImage(snapshot, 0, 0, snapshot.width, snapshot.height, 0, 0, cssW, cssH);
+        }
+      }
+      resizeCanvas();
 
       function pos(e){
         var rect = canvas.getBoundingClientRect();
@@ -474,34 +527,44 @@ function buildWorkspace() {
         return Math.max(1.2, p * 4.5);
       }
 
-      function showBanner(text){
-        var b = document.getElementById("ws-banner");
-        if (!b) return;
-        b.textContent = text;
-        b.style.display = "block";
+      var grid = document.getElementById("ws-grid");
+      var reviewCol = document.getElementById("ws-review-col");
+      var reviewPanel = document.getElementById("ws-review-panel");
+
+      function expandReview(){
+        grid.style.gridTemplateColumns = "1.3fr 1fr";
+        reviewCol.style.display = "flex";
       }
-      function hideBanner(){
-        var b = document.getElementById("ws-banner");
-        if (b) b.style.display = "none";
+      function collapseReview(){
+        grid.style.gridTemplateColumns = "1fr";
+        reviewCol.style.display = "none";
+        reviewPanel.className = "ws-review-empty";
+        reviewPanel.textContent = "Tap \\"Check my work\\" to see feedback here.";
+        setTimeout(resizeCanvas, 50);
       }
 
       // Single integration point for the future Grok-backed step review.
-      // Today this only shows a placeholder banner. Later, replace the body
-      // of this function with a real call — e.g. POST canvas.toDataURL() plus
-      // the question context to a Netlify function that calls Grok — gated by
-      // the confirm-before-save step already agreed for accuracy safety.
+      // Today this only shows a placeholder message in the review column.
+      // Later, replace the body of this function with a real call — e.g.
+      // POST canvas.toDataURL() plus the question context to a Netlify
+      // function that calls Grok — gated by the confirm-before-save step
+      // already agreed for accuracy safety.
       function requestStepReview(reason){
-        if (reason === "pause") showBanner("Looks like you paused on this one — want a hint? (AI review isn't connected yet)");
-        else showBanner("Checking your work… (AI review isn't connected yet)");
+        expandReview();
+        reviewPanel.className = "ws-review-msg";
+        reviewPanel.textContent = reason === "pause"
+          ? "Looks like you paused on this one — want a hint? (AI review isn't connected yet)"
+          : "Checking your work… (AI review isn't connected yet)";
+        setTimeout(resizeCanvas, 50);
       }
 
       canvas.addEventListener("pointerdown", function(e){
         e.preventDefault();
+        if (reviewCol.style.display === "flex") { collapseReview(); }
         drawing = true;
         hasContent = true;
         lastStrokeTime = Date.now();
         pauseTriggered = false;
-        hideBanner();
         var p = pos(e);
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
@@ -527,7 +590,7 @@ function buildWorkspace() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         hasContent = false;
         pauseTriggered = false;
-        hideBanner();
+        if (reviewCol.style.display === "flex") { collapseReview(); }
       });
       document.getElementById("ws-save").addEventListener("click", function(){
         var link = document.createElement("a");
@@ -536,8 +599,54 @@ function buildWorkspace() {
         link.click();
       });
       document.getElementById("ws-check").addEventListener("click", function(){
-        if (!hasContent) { showBanner("Write out your steps first, then tap Check my work."); return; }
+        if (!hasContent) {
+          expandReview();
+          reviewPanel.className = "ws-review-msg";
+          reviewPanel.textContent = "Write out your steps first, then tap Check my work.";
+          setTimeout(resizeCanvas, 50);
+          return;
+        }
         requestStepReview("manual");
+      });
+
+      var statusBadge = document.getElementById("ws-status-badge");
+      var completeBtn = document.getElementById("ws-complete");
+      var redoBtn = document.getElementById("ws-redo");
+
+      function refreshStatus(){
+        var done = questionId && getCompletedSet().has(questionId);
+        if (done) {
+          statusBadge.textContent = "Complete";
+          statusBadge.classList.add("is-complete");
+          completeBtn.style.display = "none";
+          redoBtn.style.display = "block";
+        } else {
+          statusBadge.textContent = "Not attempted";
+          statusBadge.classList.remove("is-complete");
+          completeBtn.style.display = "block";
+          redoBtn.style.display = "none";
+        }
+      }
+      refreshStatus();
+
+      completeBtn.addEventListener("click", function(){
+        if (!questionId) return;
+        var set = getCompletedSet();
+        set.add(questionId);
+        saveCompletedSet(set);
+        refreshStatus();
+      });
+      redoBtn.addEventListener("click", function(){
+        if (questionId) {
+          var set = getCompletedSet();
+          set.delete(questionId);
+          saveCompletedSet(set);
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasContent = false;
+        pauseTriggered = false;
+        collapseReview();
+        refreshStatus();
       });
 
       var pauseChecker = setInterval(function(){

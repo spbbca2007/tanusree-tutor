@@ -1,110 +1,108 @@
-# Sparky update — working space (pen/stylus canvas)
+# Sparky update — side-by-side workspace, mark complete/redo, focus ring
 
-Continues from the free-navigation update — only `app.js` changed again,
-same file, additive on top of that batch.
+Replaces the previous `app.js` again (same file, builds on the hotfix
+batch).
 
-## What this adds
+## What changed, matching what we prototyped and agreed
 
-Every question now has a **working space** alongside the multiple-choice
-answers (not replacing them — confirmed that's the design you wanted).
-It's a canvas she can write or draw on with the mouse, a finger, or — the
-actual point of this batch — a real pen/stylus tablet, using the browser's
-Pointer Events API, which treats mouse and stylus identically. Pressure
-data comes through when the hardware reports it (your XP-Pen tablet
-should), so strokes get thicker or thinner based on how hard she presses.
+**Layout**: the working space now starts full-width, single column. Only
+once there's something to actually show — "Check my work" clicked, or the
+automatic pause check-in fires — does a second column slide in beside it
+for AI feedback (currently the honest not-yet-connected placeholder, same
+as before). No permanently-reserved empty panel taking up space.
 
-Also included:
-- **Clear** — wipes the canvas
-- **Save as image** — downloads what she drew as a PNG, so you can
-  actually inspect stroke quality once you're testing with the tablet
-- **"Check my work"** button — always available, any time
-- **Automatic pause check-in** — if she's written something and then
-  stops for the threshold period (defaults to 20 seconds, tunable — see
-  below) without finishing, a banner appears on its own
+**Focus ring**: tapping into the canvas now shows a visible blue border,
+the same visual language as tapping into any text field — a real, if
+small, usability fix for a device where she's not looking at a mouse
+cursor for feedback.
 
-## Important: this is capture only, not evaluation — on purpose
+**Mark complete / Redo**: a status badge on the question ("Not attempted"
+/ "Complete") with buttons to toggle it. This is deliberately **self-reported
+and completely separate from AI review or multiple-choice correctness** —
+tapping Mark complete doesn't require or wait on any AI judgment, and
+doesn't touch her MC-answer mastery tracking. Two independent signals,
+not merged into one, since they can genuinely disagree (right MC answer
+picked without real working-out, or solid working-out with a slipped
+final answer). Persisted per-question via `localStorage`, so it survives
+closing the browser, restores correctly when she revisits a question, and
+doesn't leak between different questions.
 
-Per what we discussed: no Grok key is wired in yet, and it shouldn't be,
-because Grok needs to be called from a server (a Netlify function reading
-an environment variable), never from code that ships to her browser — a
-key embedded in client-side JS is visible to anyone who opens dev tools.
+## Two real bugs found and fixed during this batch — not glossed over
 
-So right now, both triggers (the manual button and the automatic pause
-check-in) call a single function, `requestStepReview(reason)`, which just
-shows an honest placeholder banner ("AI review isn't connected yet")
-instead of pretending to review anything. This is the one integration
-point for later — once the Netlify function and env var exist, only the
-*body* of that one function needs to change to a real API call. Nothing
-about the canvas, the pause-detection, or the button wiring needs to be
-touched.
+**1. The panel could get stuck open showing stale feedback.** Once
+expanded, nothing made it collapse back — so after getting a review and
+then starting to write again (fixing a mistake, trying a new approach),
+the old feedback just sat there, permanently claiming space, defeating
+the entire point of "only expand when there's something to show." Fixed:
+starting a new stroke, or hitting Clear, now collapses the panel back if
+it was showing something — since that feedback is about to be stale
+either way.
 
-## Why triggers are separate from the AI call — this is the token-usage design
+**2. A more serious one: expanding/collapsing the panel could silently
+erase her drawing.** Resizing a `<canvas>` element's width/height —
+which is exactly what happens every time the layout shifts between one
+and two columns — wipes its pixel content. That's just how canvases work,
+not a Sparky-specific quirk. Since resizing now happens every time she
+asks for a review (not just once at page load like before), the original
+code would have deleted her work at the exact moment she clicked "Check
+my work." This was caught by a test that expected the panel to still be
+collapsed at a specific point and wasn't — investigating *why* surfaced
+the deeper issue underneath, not just the surface-level test mismatch.
 
-The pause-detection and "Check my work" button both run entirely in the
-browser, for free — no network call, no tokens spent, regardless of how
-often she pauses or how long she works. The *only* thing that will ever
-cost an API call, once it's wired up, is an actual invocation of
-`requestStepReview`. Two triggers, and only two: her asking directly, or a
-genuine multi-second pause with unfinished work. Nothing polls the AI
-continuously — that would burn tokens exactly the way you didn't want.
-
-## Tuning knobs (for when you're testing pause timing)
-
-Two values control this, both overridable from outside without touching
-the function body:
-- `window.SPARKY_PAUSE_THRESHOLD_MS` — how long she must pause before the
-  check-in fires (default 20000 = 20 seconds)
-- `window.SPARKY_WS_POLL_MS` — how often the pause is checked (default
-  1000 = every second; this is just a local timer comparison, effectively
-  free)
-
-If 20 seconds feels wrong once you've watched her actually use it — too
-eager, or too slow — it's a one-line change, no logic restructuring.
+Fixed properly, not papered over: before any resize, the canvas's current
+content gets copied to an offscreen canvas; after the resize, that
+snapshot gets drawn back onto the now-differently-sized canvas. Verified
+this actually happens with a dedicated test — confirmed the snapshot/
+restore fires when there's real content to protect, and confirmed it does
+*not* fire pointlessly on an empty canvas.
 
 ## Testing performed
 
-This is genuinely new interactive surface (a `<canvas>`, pointer events,
-timers), so it got the same real-execution rigor as the free-navigation
-batch, plus a wrinkle worth knowing about:
+- `node --check` on the final file
+- Full workspace test suite (9 scenarios): canvas renders styled and
+  collapsed by default; real drawing + pressure-sensitive width still
+  work after the restructuring; empty-canvas "Check my work" nudges her
+  to write first; content-bearing "Check my work" shows the honest
+  placeholder; pause trigger fires once and doesn't repeat; Mark complete
+  updates the badge, swaps to Redo, and persists to `localStorage`; Redo
+  fully resets badge, storage, canvas, and layout; completion status is
+  correctly per-question (verified against a second, different question);
+  switching questions tears down the old pause-timer with no leak
+- Separate dedicated test specifically for the content-preservation fix —
+  confirms the snapshot/restore mechanism actually engages when needed and
+  stays out of the way when it isn't
+- Re-ran both the free-navigation regression suite and the earlier
+  workspace-hotfix checks from prior batches — full 33-question bank,
+  out-of-order navigation, answer-without-blocking, status icons, Parent
+  View, Topics View, and a second independent topic all still pass
 
-**A real testing gap was found and worked around, not papered over.**
-jsdom (the DOM-in-Node.js library used for these tests) has a mode needed
-so Node can directly `import` the real `app.js` — but that same mode
-silently skips *dynamically inserted* `<script>` tags, which is exactly
-the mechanism the app already uses (`executeScripts`) to make injected
-visuals and this new workspace script actually run. Real browsers (Chrome,
-which is what you're using) execute these correctly — this was purely a
-test-environment gap. It was caught because the first test run showed zero
-canvas activity despite no errors, which didn't match expected behavior,
-so it was investigated rather than assumed passing. Switching jsdom to its
-full script-execution mode for this specific test resolved it, and all
-scenarios below were then verified against the *actual* rendered,
-executing code:
+## Still honestly placeholder, on purpose
 
-- `node --check` on the final file; diffed against the free-navigation
-  version — only the intended addition present
-- Installed a recording mock canvas context (jsdom has no real pixel
-  renderer without a native add-on) to verify the exact drawing calls your
-  code makes — proves the wiring is correct, not that ink looks good on a
-  real screen; that part still needs the physical tablet
-- Drawing a stroke produces the right sequence of canvas calls
-- Higher stylus pressure produces a measurably thicker line than lower
-  pressure (simulated via `PointerEvent.pressure`)
-- "Check my work" with an empty canvas asks her to write first, rather
-  than pretending to review nothing
-- "Check my work" with content shows the honest not-yet-connected
-  placeholder
-- The pause trigger fires automatically after the threshold with no
-  drawing — and does NOT fire again repeatedly while she's still paused
-  (would be an obviously wrong/annoying behavior)
-- Drawing again resets the pause detector, and a *second* pause after
-  resuming triggers again (confirms it's not a one-shot-ever flag)
-- "Save as image" genuinely creates and clicks a download link with real
-  image data
-- Switching to a different question tears down the old pause-checker
-  timer and gives a completely fresh, clean workspace — no leftover
-  banner or stale state carried over
-- Re-ran the full free-navigation regression suite from the last batch on
-  top of this change — all 33 questions, out-of-order navigation,
-  answer-without-blocking, status icons, Parent View, Topics View, and a
-  second independent topic all still pass unchanged
+Same as before: "Check my work" and the pause check-in both show
+"AI review isn't connected yet" — no Grok key wired in, since that
+requires the Netlify environment variable to be set up first (steps
+below). The integration point (`requestStepReview`) is unchanged in
+shape from the last batch — only its trigger plumbing and where its
+output renders have changed.
+
+---
+
+# Steps to add the Grok API key to Netlify
+
+1. Log into **console.x.ai** (not console.groq.com — different company,
+   confirmed this is the one you're using) and generate an API key from
+   there if you haven't already got one issued for this specific use.
+2. Go to your **Sparky site's Netlify dashboard** (not the expense
+   tracker's — that one's a separate Oracle/PM2 deployment with its own,
+   unrelated config) → **Site settings** → **Environment variables**.
+3. Click **Add a variable**, name it something clear like `GROK_API_KEY`,
+   paste the key as the value, save.
+4. **Trigger a redeploy** — Netlify functions only pick up new
+   environment variables on the next deploy, not automatically. A "Clear
+   cache and deploy site" from the Deploys tab is the safest way to be
+   sure it's picked up.
+5. That's it on your end — don't paste the key anywhere else, including
+   here in chat. Once it's set, just tell me it's done and I'll build
+   `netlify/functions/review-work.js` to read it server-side and start
+   wiring up the real Grok call behind the same trigger points already
+   built and tested in this batch.
