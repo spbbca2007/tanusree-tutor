@@ -5,7 +5,7 @@ import { recordQuestionSeen } from "./engine.js";
 import { questionBank } from "./questionbank.js";
 import { visuals } from "./visuals.js";
 import { exportProgress, importProgress, autoBackupIfDue, getLastBackupInfo, formatBackupTime, getMigrationSummary, getBackupLog } from "./backup.js";
-import { checkDbConnection, loadStateFromDb, saveStateToDb, scheduleSave, forceSave, getDbStats, getConnectionStatus } from "./db.js";
+import { checkDbConnection, loadStateFromDb, saveStateToDb, scheduleSave, forceSave, getDbStats, getConnectionStatus, getToken } from "./db.js";
 import { getSolution } from "./solver.js";
 import { ensureAuthenticated } from "./auth.js";
 
@@ -18,6 +18,33 @@ let wrongStreak = {};
 let correctStreak = 0;
 let challengeState = null;
 let sessionStart = Date.now();
+
+// Bridge for the workspace's inline <script> (buildWorkspace, injected and
+// re-executed via executeScripts as an independent classic script, not
+// part of this ES module) to reach the real review-work endpoint using the
+// same token-header convention every other authenticated call in db.js
+// already uses. Kept as one small function here rather than duplicating
+// fetch/auth logic inside the injected script on every question render.
+window.__sparkyReviewWork = async function (imageDataUrl, questionPrompt, correctAnswer) {
+  const token = getToken();
+  if (!token) return { error: "Not signed in — please refresh and log in again." };
+  let res;
+  try {
+    res = await fetch("/api/review-work", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-sparky-token": token },
+      body: JSON.stringify({ questionPrompt, correctAnswer, imageDataUrl }),
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch (e) {
+    return { error: "Couldn't reach the review service — check your connection and try again." };
+  }
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    return { error: d.error || `Review failed (status ${res.status})` };
+  }
+  return await res.json();
+};
 
 const views = {};
 document.querySelectorAll(".view").forEach(el => { views[el.id.replace("view-","")] = el; });
@@ -408,11 +435,11 @@ function buildQuestionCard(q) {
       <div id="hint-area" class="hint-area" style="display:none"><p>${q.hint}</p></div>
     </div>
     <div id="feedback-area" class="feedback-area"></div>
-    ${buildWorkspace(q.id)}
+    ${buildWorkspace(q.id, q.prompt, q.answer)}
   </div>`;
 }
 
-function buildWorkspace(questionId) {
+function buildWorkspace(questionId, questionPromptText, correctAnswerText) {
   return `<div class="ws-grid" id="ws-grid">
     <style>
       .ws-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px;transition:grid-template-columns .3s ease}
@@ -458,6 +485,8 @@ function buildWorkspace(questionId) {
     (function(){
       var WS_COMPLETE_KEY = "sparky-workspace-complete";
       var questionId = ${JSON.stringify(questionId)};
+      var questionPrompt = ${JSON.stringify(questionPromptText)};
+      var correctAnswer = ${JSON.stringify(correctAnswerText)};
 
       function getCompletedSet(){
         try { return new Set(JSON.parse(localStorage.getItem(WS_COMPLETE_KEY) || "[]")); }
@@ -543,19 +572,70 @@ function buildWorkspace(questionId) {
         setTimeout(resizeCanvas, 50);
       }
 
-      // Single integration point for the future Grok-backed step review.
-      // Today this only shows a placeholder message in the review column.
-      // Later, replace the body of this function with a real call — e.g.
-      // POST canvas.toDataURL() plus the question context to a Netlify
-      // function that calls Grok — gated by the confirm-before-save step
-      // already agreed for accuracy safety.
+      // Single integration point for the Grok-backed step review, calling
+      // the bridge function app.js sets up once at module load (see
+      // window.__sparkyReviewWork near the top of the file) — this inline
+      // script runs as its own independent <script> tag via
+      // executeScripts, not inside the ES module, so it can't reach
+      // imported functions like getToken directly; the bridge is how it
+      // reaches them.
       function requestStepReview(reason){
         expandReview();
         reviewPanel.className = "ws-review-msg";
         reviewPanel.textContent = reason === "pause"
-          ? "Looks like you paused on this one — want a hint? (AI review isn't connected yet)"
-          : "Checking your work… (AI review isn't connected yet)";
+          ? "Looks like you paused on this one — checking in…"
+          : "Checking your work…";
         setTimeout(resizeCanvas, 50);
+
+        var imageDataUrl = canvas.toDataURL("image/png");
+        window.__sparkyReviewWork(imageDataUrl, questionPrompt, correctAnswer).then(function(result){
+          renderReviewResult(result, reason);
+        }).catch(function(){
+          reviewPanel.className = "ws-review-msg";
+          reviewPanel.textContent = "Something went wrong checking your work — try again in a moment.";
+        });
+      }
+
+      function renderReviewResult(result, reason){
+        if (result.error) {
+          reviewPanel.className = "ws-review-msg";
+          reviewPanel.textContent = result.error;
+          return;
+        }
+        if (result.situation === "empty") {
+          // Nothing meaningful to confirm-transcribe — go straight to the nudge.
+          reviewPanel.className = "ws-review-msg";
+          reviewPanel.textContent = result.feedback || "Try writing out your first step.";
+          return;
+        }
+        // Partial or complete work: confirm what it read before treating
+        // anything as a verdict, since a misread line is worse than no
+        // review at all.
+        reviewPanel.className = "";
+        reviewPanel.innerHTML = "";
+        var readBack = document.createElement("p");
+        readBack.style.cssText = "font-size:13px;color:#2c5f8a;margin:0 0 8px";
+        readBack.textContent = "Here's what I read: \u201c" + (result.transcription || "(nothing clear)") + "\u201d — is that right?";
+        var btnRow = document.createElement("div");
+        btnRow.style.cssText = "display:flex;gap:8px";
+        var yesBtn = document.createElement("button");
+        yesBtn.textContent = "Yes, that's right";
+        yesBtn.style.cssText = "font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid #4a90d9;background:#fff;color:#4a90d9;cursor:pointer";
+        var noBtn = document.createElement("button");
+        noBtn.textContent = "No, that's not right";
+        noBtn.style.cssText = "font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#666;cursor:pointer";
+        yesBtn.addEventListener("click", function(){
+          reviewPanel.className = "ws-review-msg";
+          reviewPanel.textContent = result.feedback || "Looks good.";
+        });
+        noBtn.addEventListener("click", function(){
+          reviewPanel.className = "ws-review-msg";
+          reviewPanel.textContent = "No problem — this stays unconfirmed and won't count as a check. Try writing a bit clearer and check again.";
+        });
+        btnRow.appendChild(yesBtn);
+        btnRow.appendChild(noBtn);
+        reviewPanel.appendChild(readBack);
+        reviewPanel.appendChild(btnRow);
       }
 
       canvas.addEventListener("pointerdown", function(e){
