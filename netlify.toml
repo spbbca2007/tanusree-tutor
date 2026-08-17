@@ -21,3 +21,8 @@
   from = "/api/verify-pin"
   to = "/.netlify/functions/verify-pin"
   status = 200
+
+[[redirects]]
+  from = "/api/review-work"
+  to = "/.netlify/functions/review-work"
+  status = 200
