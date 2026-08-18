@@ -41,7 +41,10 @@ window.__sparkyReviewWork = async function (imageDataUrl, questionPrompt, correc
   }
   if (!res.ok) {
     const d = await res.json().catch(() => ({}));
-    return { error: d.error || `Review failed (status ${res.status})` };
+    let msg = d.error || `Review failed (status ${res.status})`;
+    if (d.status) msg += ` [Grok status ${d.status}]`;
+    if (d.detail) msg += `: ${String(d.detail).slice(0, 200)}`;
+    return { error: msg };
   }
   return await res.json();
 };
