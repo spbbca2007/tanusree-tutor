@@ -1,17 +1,32 @@
-// review-work.js — sends a photo of Tanusree's working space to Grok (X.AI)
-// for a step-by-step review. Server-side only: the API key never reaches
-// the browser, matching the pattern in _supabase.js for the Supabase
-// service role key.
+// review-work.js — sends a photo of Tanusree's working space to a
+// vision-capable LLM for a step-by-step review. Server-side only: the API
+// key never reaches the browser, matching the pattern in _supabase.js for
+// the Supabase service role key.
+//
+// Provider-configurable via env vars, not hardcoded, since the model this
+// actually ends up using may change (started on X.AI/Grok, may move to
+// Groq or elsewhere depending on cost/quality). Most providers that claim
+// "OpenAI compatibility" (Groq included) use the same request shape and
+// the same Authorization: Bearer <key> header, so switching providers is
+// just these two env vars plus swapping the SPARKY key value — no code
+// change needed.
+//
+//   AI_REVIEW_API_URL — full chat-completions endpoint URL
+//   AI_REVIEW_MODEL   — exact model ID string the provider expects
+//
+// Both fall back to the X.AI defaults below if unset.
 const { verifyToken, json } = require("./_supabase");
 
-const XAI_API_URL = "https://api.x.ai/v1/chat/completions";
+const DEFAULT_API_URL = "https://api.x.ai/v1/chat/completions";
 
 // TODO: confirm this exact string against console.x.ai (or the X.AI API
-// docs) before the first real call. The console shows the display name
-// "Grok 4.6" — the API model slug is sometimes worded slightly differently
-// from the marketing name. If the first real call 404s or errors on
-// "model not found", this is the line to fix.
-const XAI_MODEL = "grok-4.6";
+// docs) before relying on the X.AI default. The console shows the display
+// name "Grok 4.6" — the API model slug is sometimes worded slightly
+// differently from the marketing name.
+const DEFAULT_MODEL = "grok-4.6";
+
+const API_URL = process.env.AI_REVIEW_API_URL || DEFAULT_API_URL;
+const MODEL = process.env.AI_REVIEW_MODEL || DEFAULT_MODEL;
 
 function buildPrompt(questionPrompt, correctAnswer) {
   return `You are reviewing a Grade 7 student's handwritten math working, shown in the attached image. She is 12 years old — be encouraging, never harsh.
@@ -58,14 +73,14 @@ exports.handler = async (event) => {
 
     let response;
     try {
-      response = await fetch(XAI_API_URL, {
+      response = await fetch(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: XAI_MODEL,
+          model: MODEL,
           messages: [
             {
               role: "user",
