@@ -556,7 +556,14 @@ function buildWorkspace(questionId, questionPromptText, correctAnswerText) {
       function widthFor(e){
         var isPen = e.pointerType === "pen";
         var p = (isPen || e.pointerType === "touch") && e.pressure > 0 ? e.pressure : 0.5;
-        return Math.max(1.2, p * 4.5);
+        // Floor raised from 1.2 to 2.5: at low pressure the old formula
+        // could produce a near-1px hairline, which anti-aliases into a
+        // faint gray line once rendered — thin enough to read fine on
+        // screen while she's writing, but genuinely hard to OCR once
+        // saved/sent for review. This guarantees a solidly legible stroke
+        // even at the lightest touch, while still scaling up with real
+        // pressure for emphasis.
+        return Math.max(2.5, 2.5 + p * 4);
       }
 
       var grid = document.getElementById("ws-grid");
