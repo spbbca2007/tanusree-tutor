@@ -582,6 +582,34 @@ function buildWorkspace(questionId, questionPromptText, correctAnswerText) {
         setTimeout(resizeCanvas, 50);
       }
 
+      // Shrink the canvas for the API call specifically — "Save as image"
+      // still uses the full-resolution canvas untouched, this is only for
+      // what gets sent to the review endpoint. The on-screen canvas is
+      // sized up by devicePixelRatio for crisp drawing (can easily be
+      // 1200px+ wide on a high-DPI laptop screen), which is far more
+      // resolution than handwriting OCR needs and directly costs more
+      // tokens per request — real, hit-a-rate-limit-on-Groq's-free-tier
+      // cost, not theoretical. Capping the longest side at 900px and using
+      // JPEG instead of PNG cuts payload size substantially while staying
+      // comfortably legible for OCR purposes.
+      function getReviewImage(){
+        var maxDim = 900;
+        var srcW = canvas.width, srcH = canvas.height;
+        var scale = Math.min(1, maxDim / Math.max(srcW, srcH));
+        var outW = Math.max(1, Math.round(srcW * scale));
+        var outH = Math.max(1, Math.round(srcH * scale));
+        var temp = document.createElement("canvas");
+        temp.width = outW;
+        temp.height = outH;
+        var tctx = temp.getContext("2d");
+        // JPEG has no transparency — fill white first so a transparent
+        // canvas background doesn't get encoded as black.
+        tctx.fillStyle = "#ffffff";
+        tctx.fillRect(0, 0, outW, outH);
+        tctx.drawImage(canvas, 0, 0, srcW, srcH, 0, 0, outW, outH);
+        return temp.toDataURL("image/jpeg", 0.85);
+      }
+
       // Single integration point for the Grok-backed step review, calling
       // the bridge function app.js sets up once at module load (see
       // window.__sparkyReviewWork near the top of the file) — this inline
@@ -597,7 +625,7 @@ function buildWorkspace(questionId, questionPromptText, correctAnswerText) {
           : "Checking your work…";
         setTimeout(resizeCanvas, 50);
 
-        var imageDataUrl = canvas.toDataURL("image/png");
+        var imageDataUrl = getReviewImage();
         window.__sparkyReviewWork(imageDataUrl, questionPrompt, correctAnswer).then(function(result){
           renderReviewResult(result, reason);
         }).catch(function(){
