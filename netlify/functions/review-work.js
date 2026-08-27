@@ -34,19 +34,20 @@ function buildPrompt(questionPrompt, correctAnswer) {
 The question is: "${questionPrompt}"
 ${correctAnswer ? `The correct final answer is: "${correctAnswer}".` : ""}
 
-Respond with ONLY valid JSON, no other text before or after it, in exactly this shape:
+Respond with ONLY valid JSON, no other text before or after it, no markdown code fences, in exactly this shape:
 {
-  "transcription": "<exactly what you can read in the image, as plain text/math notation>",
+  "transcription": "<your best-effort reading of everything visible in the image, as plain text/math notation>",
   "situation": "empty" | "partial" | "complete",
   "verdict": "correct" | "incorrect" | "on-track" | "unclear",
   "feedback": "<one short sentence, under 20 words, encouraging tone>"
 }
 
 Rules:
+- ALWAYS attempt a real transcription of whatever marks are visible, even faint, messy, or partial ones. Never leave transcription empty or null unless the image is genuinely, completely blank — that is what "empty" situation means, not "hard to read." If you're uncertain about a specific character, write your best guess for it rather than omitting it, and note the uncertainty in the feedback field instead — uncertainty is never a reason to return an empty transcription.
 - If the image shows nothing or almost nothing written, set situation to "empty". feedback must nudge toward the FIRST move as a question back at her — do not solve it for her.
 - If it shows partial, unfinished work, set situation to "partial" and verdict to "on-track" or "incorrect" based only on whether the steps so far are valid — do NOT judge partial work as if it were a final wrong answer.
 - If it looks like a complete attempt, set situation to "complete". If verdict is "incorrect", feedback must point to the exact first line where it goes wrong and why, not just "wrong".
-- If you cannot read the handwriting clearly, say so honestly in the transcription rather than guessing — set verdict to "unclear" in that case.
+- Set verdict to "unclear" only when you genuinely cannot form any reasonable reading at all — and even then, transcription should describe what you can make out (e.g. "a few digits, hard to make out which") rather than being empty.
 - feedback must stay under 20 words. This is a strict limit, not a suggestion.`;
 }
 
@@ -106,13 +107,25 @@ exports.handler = async (event) => {
     const raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
     if (!raw) return json(502, { error: "Unexpected response shape from Grok", raw: data });
 
+    // Diagnostic only — visible in Netlify's function logs. Lets us see
+    // exactly what the model sent back, distinct from whatever the parsed/
+    // fallback response ends up showing in the UI. Cheap to leave in.
+    console.log("[review-work] raw model content:", raw);
+
+    // Models frequently wrap JSON in ```json ... ``` fences despite being
+    // told not to — strip that before attempting to parse, rather than
+    // treating it as a parse failure.
+    const stripped = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+
     let parsed;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(stripped);
     } catch (parseErr) {
-      // The model didn't return clean JSON. Don't crash the request over
-      // it — fall back to an honest "couldn't read it" response so the UI
-      // still has something sensible to show instead of an error screen.
+      console.log("[review-work] JSON.parse failed on:", stripped);
+      // The model didn't return clean JSON even after stripping fences.
+      // Don't crash the request over it — fall back to an honest
+      // "couldn't read it" response so the UI still has something
+      // sensible to show instead of an error screen.
       return json(200, {
         transcription: null,
         situation: "unclear",
@@ -122,6 +135,7 @@ exports.handler = async (event) => {
       });
     }
 
+    console.log("[review-work] parsed result:", JSON.stringify(parsed));
     return json(200, parsed);
   } catch (e) {
     return json(500, { error: String(e) });
