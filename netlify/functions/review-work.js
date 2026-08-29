@@ -92,6 +92,14 @@ exports.handler = async (event) => {
             },
           ],
           temperature: 0.2,
+          // Never set before — meant the model's reasoning trace (this is
+          // a "thinking" model per Groq's docs) was hitting the provider's
+          // default token ceiling mid-thought, before ever reaching the
+          // actual JSON answer. That's exactly what caused the JSON.parse
+          // failures we saw in the logs, not a genuine OCR problem.
+          // Generous on purpose: the reasoning trace itself can run long,
+          // and cutting it off again just reproduces the same bug.
+          max_completion_tokens: 4096,
         }),
       });
     } catch (networkErr) {
