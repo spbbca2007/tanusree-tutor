@@ -120,10 +120,20 @@ exports.handler = async (event) => {
     // fallback response ends up showing in the UI. Cheap to leave in.
     console.log("[review-work] raw model content:", raw);
 
-    // Models frequently wrap JSON in ```json ... ``` fences despite being
-    // told not to — strip that before attempting to parse, rather than
-    // treating it as a parse failure.
-    const stripped = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+    // This is a "thinking" model (confirmed from real logs) — it wraps its
+    // reasoning in <think>...</think> tags before the actual answer, and
+    // separately, models in general frequently wrap JSON in ```json ...```
+    // fences despite being told not to. Strip both before attempting to
+    // parse, rather than treating either as a parse failure. Order matters:
+    // remove the <think> block first, since the real content sits after
+    // it — only then check what remains for a markdown fence.
+    // Deliberately non-greedy and requires a closing tag: if the response
+    // is truncated mid-thought with no closing </think>, this intentionally
+    // does NOT match, so a genuinely cut-off response still correctly falls
+    // through to the fallback below rather than being parsed as if the
+    // (missing) real answer were present.
+    const withoutThinking = raw.replace(/<think>[\s\S]*?<\/think>/gi, "");
+    const stripped = withoutThinking.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
 
     let parsed;
     try {
