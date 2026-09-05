@@ -618,6 +618,17 @@ function buildWorkspace(questionId, questionPromptText, correctAnswerText) {
       // imported functions like getToken directly; the bridge is how it
       // reaches them.
       function requestStepReview(reason){
+        // A manual "Check my work" click never touched this flag before —
+        // meaning if she checked manually and then just sat there (didn't
+        // draw again, didn't clear), the pause-timer would still fire on
+        // its own ~20s later for the exact same unchanged content she
+        // already got a result for. That's the redundant second request
+        // that hit the rate limit. Marking it here, regardless of which
+        // reason triggered this call, means any completed check (manual
+        // or automatic) satisfies the pause condition until she actually
+        // does something new — draws again or clears.
+        pauseTriggered = true;
+
         expandReview();
         reviewPanel.className = "ws-review-msg";
         reviewPanel.textContent = reason === "pause"
